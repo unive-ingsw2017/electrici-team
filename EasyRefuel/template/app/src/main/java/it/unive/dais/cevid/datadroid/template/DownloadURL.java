@@ -30,11 +30,13 @@ import static android.content.ContentValues.TAG;
 
 public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Void,HashMap<Integer,Station>> {
 
+    public static final int TIMEOUT = 1000000000;
+
     protected HashMap<Integer,Station> doInBackground(HashMap<Integer,Station>[] station) {
-        URL url_pompe = null;
+        URL url_benz = null;
         URL url_costi = null;
         try {
-            url_pompe = new URL("http://www.sviluppoeconomico.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv");
+            url_benz = new URL("http://www.sviluppoeconomico.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv");
             url_costi = new URL("http://www.sviluppoeconomico.gov.it/images/exportCSV/prezzo_alle_8.csv");
         } catch (MalformedURLException e1) {
             e1.printStackTrace();
@@ -44,41 +46,29 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Void,HashMa
         c1 = null;
         c2 = null;
         try {
-            c1 = (HttpURLConnection) url_pompe.openConnection();
-            c2 = (HttpURLConnection) url_costi.openConnection();
+            c1 = (HttpURLConnection) url_benz.openConnection();
         } catch (IOException e2) {
             e2.printStackTrace();
         }
         try {
             c1.setRequestMethod("GET");
-            c2.setRequestMethod("GET");
         } catch (ProtocolException e) {
             e.printStackTrace();
         }
-        c1.setDoOutput(true);
-        c1.setDoOutput(true);
-        c1.setConnectTimeout(100000);
-        c2.setConnectTimeout(100000);
+        //c1.setConnectTimeout(TIMEOUT);
+        c1.setReadTimeout(TIMEOUT);
         try {
             c1.connect();
-            c2.connect();
             InputStream is1 = c1.getInputStream();
-            InputStream is2 = c2.getInputStream();
             Reader reader1 = new InputStreamReader(is1);
-            Reader reader2 = new InputStreamReader(is2);
-
             BufferedReader br1 = new BufferedReader(reader1);
-            BufferedReader br2 = new BufferedReader(reader2);
             /*dovrebbe eliminare la prima riga delle tabelle*/
             br1.readLine();
-            br2.readLine();
-
-            CsvRowParser parser_pompe = new CsvRowParser(br1, true, ";", null);
-            CsvRowParser parser_costi = new CsvRowParser(br2, true, ";", null);
-
+            CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
             int i = 0;
-            List<CsvRowParser.Row> rows1 = parser_pompe.parse();
-       //     List<CsvRowParser.Row> rows2 = parser_costi.parse();
+            List<CsvRowParser.Row> rows1 = parser_benz.parse();
+            c1.disconnect();
+
             /*parsa la prima tabella*/
             for (CsvRowParser.Row row : rows1) {
                 try {
@@ -104,22 +94,49 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Void,HashMa
                 }
 
             }
+
+            try {
+                c2 = (HttpURLConnection) url_costi.openConnection();
+            } catch (IOException e2) {
+                e2.printStackTrace();
+            }
+            try {
+                c2.setRequestMethod("GET");
+            } catch (ProtocolException e) {
+                e.printStackTrace();
+            }
+           // c2.setConnectTimeout(TIMEOUT);
+            c2.setReadTimeout(TIMEOUT);
+            c2.connect();
+            InputStream is2 = c2.getInputStream();
+            Reader reader2 = new InputStreamReader(is2);
+            BufferedReader br2 = new BufferedReader(reader2);
+            br2.readLine();
+            CsvRowParser parser_costi = new CsvRowParser(br2, true, ";", null);
+            List<CsvRowParser.Row> rows2 = parser_costi.parse();
+            c2.disconnect();
+            i = 0;
             /*parsa la seconda tabella*/
-         //   for(CsvRowParser.Row row : rows2) {
-           //     int id = 0;
-             //   try {
-               //     id = Integer.parseInt(row.get("idImpianto"));
-                 //   double prezzo = Double.parseDouble(row.get("prezzo"));
+            for(CsvRowParser.Row row : rows2) {
+              int id = 0;
+                try {
+                    id = Integer.parseInt(row.get("idImpianto"));
+                    double prezzo = Double.parseDouble(row.get("prezzo"));
                     /*cerco la stazione con l'id corretto e la rimuovo dall'hashMap*/
-                //    Station temp = station[0].remove(id);
-                    /*aggiungo alla hashMAp dei carburanti il carburante e il prezzo appena trovati*/
-                  //  temp.getCarburantiCosto().put(row.get("descCarburante"),prezzo);
-                    /*rimetto la stazione nella HashMap*/
-                    //station[0].put(id,temp);
-                //} catch (RecoverableParseException e) {
-                  //  e.printStackTrace();
-                //}
-           // }
+                    Station temp = station[0].remove(id);
+                    /*controllo se l'id corrisponde ad una stazione esistente*/
+                    if(temp != null) {
+                        /*aggiungo alla hashMAp dei carburanti il carburante e il prezzo appena trovati*/
+                        temp.getCarburantiCosto().put(row.get("descCarburante"), prezzo);
+                        /*rimetto la stazione nella HashMap*/
+                        station[0].put(id, temp);
+                        Log.d(TAG, "onMapReady;" + i + Arrays.toString(row.getValues()));
+                        i++;
+                    }
+                } catch (RecoverableParseException e) {
+                    e.printStackTrace();
+                }
+            }
         } catch (IOException  e) {
             e.printStackTrace();
         }
