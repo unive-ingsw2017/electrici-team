@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:title="Diesel"
+        android:id="@+id/Diesel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:actionLayout="@layout/switch_item" />
+    <item
+        android:title="GPL"
+        android:id="@+id/GPL"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:actionLayout="@layout/switch_item" />
+    <item
+        android:id="@+id/Benzina"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:title="Benzina"
+        app:actionLayout="@layout/switch_item" />
+    <item
+        android:title="Elettrico"
+        android:id="@+id/Elettrico"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:actionLayout="@layout/switch_item" />
+    <item
+        android:title="Metano"
+        android:id="@+id/Metano"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:actionLayout="@layout/switch_item" />
+    <!--non so come fare col titolo-->
+    <item
+        android:id="@+id/Conferma"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:title=" "
+        app:actionLayout="@layout/button_conferma" />
+
+
+</menu>
