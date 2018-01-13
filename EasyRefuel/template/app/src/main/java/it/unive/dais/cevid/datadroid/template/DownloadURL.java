@@ -2,6 +2,7 @@ package it.unive.dais.cevid.datadroid.template;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.model.LatLng;
 
@@ -21,12 +22,13 @@ import java.util.concurrent.ExecutionException;
 
 import it.unive.dais.cevid.datadroid.lib.parser.CsvRowParser;
 import it.unive.dais.cevid.datadroid.lib.parser.RecoverableParseException;
+import it.unive.dais.cevid.datadroid.template.MapsActivity;
 
 import static android.content.ContentValues.TAG;
 
 /**
  * Created by Sara on 08/01/2018.
- */
+ *//*
 
 public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Void,HashMap<Integer,Station>> {
 
@@ -62,14 +64,15 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Void,HashMa
             InputStream is1 = c1.getInputStream();
             Reader reader1 = new InputStreamReader(is1);
             BufferedReader br1 = new BufferedReader(reader1);
-            /*dovrebbe eliminare la prima riga delle tabelle*/
+            dovrebbe eliminare la prima riga delle tabelle
             br1.readLine();
             CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
             int i = 0;
             List<CsvRowParser.Row> rows1 = parser_benz.parse();
+
             c1.disconnect();
 
-            /*parsa la prima tabella*/
+
             for (CsvRowParser.Row row : rows1) {
                 try {
                     i++;
@@ -92,9 +95,7 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Void,HashMa
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
             }
-
             try {
                 c2 = (HttpURLConnection) url_costi.openConnection();
             } catch (IOException e2) {
@@ -116,19 +117,19 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Void,HashMa
             List<CsvRowParser.Row> rows2 = parser_costi.parse();
             c2.disconnect();
             i = 0;
-            /*parsa la seconda tabella*/
+
             for(CsvRowParser.Row row : rows2) {
               int id = 0;
                 try {
                     id = Integer.parseInt(row.get("idImpianto"));
                     double prezzo = Double.parseDouble(row.get("prezzo"));
-                    /*cerco la stazione con l'id corretto e la rimuovo dall'hashMap*/
+
                     Station temp = station[0].remove(id);
-                    /*controllo se l'id corrisponde ad una stazione esistente*/
+
                     if(temp != null) {
-                        /*aggiungo alla hashMAp dei carburanti il carburante e il prezzo appena trovati*/
+
                         temp.getCarburantiCosto().put(row.get("descCarburante"), prezzo);
-                        /*rimetto la stazione nella HashMap*/
+
                         station[0].put(id, temp);
                         Log.d(TAG, "onMapReady;" + i + Arrays.toString(row.getValues()));
                         i++;
@@ -142,10 +143,12 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Void,HashMa
         }
         return station[0];
     }
-        /*protected void onProgressUpdate(Integer... progress) {
+
+        protected void onProgressUpdate(Integer... progress) {
             setProgressPercent(progress[0]);
         }
         protected void onPostExecute(List<Station> stations) {
             return stations[0];
-        }*/
+        }
 }
+*/

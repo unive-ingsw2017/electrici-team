@@ -49,24 +49,84 @@
                 />
         </LinearLayout>
 
+
     </fragment>
     <!-- The navigation drawer -->
     <android.support.design.widget.NavigationView
         android:id="@+id/navList"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_gravity="start"
+        android:layout_gravity="start"><!--
         app:headerLayout="@layout/drawer_top"
-        app:menu="@menu/drawer_menu">
-
+        app:menu="@menu/drawer_menu">-->
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="bottom"
             android:orientation="vertical">
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="Carburanti"
+                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                android:textSize="24sp" />
+
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                style="@android:style/Widget.Holo.Light.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:indeterminate="false"
+                android:max="100"
+                android:progressTint="@color/button_main_color"
+                app:layout_anchorGravity="top" />
+
+            <TextView
+                android:id="@+id/text_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:gravity="center_horizontal"
+                android:textSize="20sp"
+                android:padding="10dp"
+                app:layout_anchor="@id/progress_bar"
+                app:layout_anchorGravity="center_horizontal" />
+
+            <Switch
+                android:id="@+id/Diesel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Diesel" />
+
+            <Switch
+                android:id="@+id/GPL"
+                android:text="GPL"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <Switch
+                android:id="@+id/Benzina"
+                android:text="Benzina"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <Switch
+                android:id="@+id/Elettrico"
+                android:text="Elettrico"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <Switch
+                android:id="@+id/Metano"
+                android:text="Metano"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
             <Button
-                android:id="@+id/conferma"
+                android:id="@+id/Conferma"
                 style="@style/Widget.AppCompat.Button.Colored"
                 android:layout_width="148dp"
                 android:layout_height="wrap_content"
@@ -74,7 +134,6 @@
                 android:text="Conferma" />
 
             <TextView
-                android:id="@+id/itinerario"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="10dp"
@@ -88,27 +147,21 @@
                 android:layout_height="wrap_content"
                 android:ems="10"
                 android:text="Partenza" />
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
             <EditText
                 android:id="@+id/destinazione"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ems="10"
                 android:text="Destinazione" />
-
             <Button
-                android:id="@+id/parti"
+                android:id="@+id/Parti"
                 style="@style/Widget.AppCompat.Button.Colored"
                 android:layout_width="148dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:text="Parti" />
-        </LinearLayout>
 
+        </LinearLayout>
     </android.support.design.widget.NavigationView>
 </android.support.v4.widget.DrawerLayout>
 

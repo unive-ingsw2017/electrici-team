@@ -15,6 +15,7 @@ import android.view.MenuItem;
 
 import com.google.android.gms.maps.GoogleMap;
 
+import java.util.List;
 import java.util.Map;
 
 import it.unive.dais.cevid.datadroid.lib.util.UnexpectedException;

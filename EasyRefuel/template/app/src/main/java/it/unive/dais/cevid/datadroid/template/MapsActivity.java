@@ -6,6 +6,7 @@ package it.unive.dais.cevid.datadroid.template;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
@@ -35,7 +36,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -60,14 +63,28 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import it.unive.dais.cevid.datadroid.lib.parser.AsyncParser;
+import it.unive.dais.cevid.datadroid.lib.parser.CsvRowParser;
+import it.unive.dais.cevid.datadroid.lib.parser.RecoverableParseException;
 import it.unive.dais.cevid.datadroid.lib.util.MapItem;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * Questa classe è la componente principale del toolkit: fornisce servizi primari per un'app basata su Google Maps, tra cui localizzazione, pulsanti
@@ -100,7 +117,7 @@ public class MapsActivity extends AppCompatActivity
      * fanno parte degli oggetti gestiti manualmente dal codice.
      */
     protected ImageButton button_here, button_car;
-    //protected Button button_confirm;
+    protected Button button_confirm;
     /**
      * API per i servizi di localizzazione.
      */
@@ -124,9 +141,19 @@ public class MapsActivity extends AppCompatActivity
     private ActionBarDrawerToggle mDrawerToggle;
     private DrawerLayout mDrawerLayout;
     private String mActivityTitle;
+    private Menu mMenu;
 
     /*bottoni del drawer*/
     protected Switch GPL,diesel,benzina,metano,elettrico;
+
+    /*progress bar e Async Task*/
+    private ProgressBar mProgressBar;
+    private AsyncTask<HashMap<Integer,Station>, Integer,HashMap<Integer,Station>> mMyTask;
+    private TextView mTextView;
+
+    HashMap<Integer,Station> station = new HashMap();
+    private Collection<Marker> markers;
+
 
     /**
      * Questo metodo viene invocato quando viene inizializzata questa activity.
@@ -140,12 +167,23 @@ public class MapsActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
+        // inizializza le preferenze
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
+        // trova gli oggetti che rappresentano i bottoni e li salva come campi d'istanza
+        button_here = (ImageButton) findViewById(R.id.button_here);
+        button_car = (ImageButton) findViewById(R.id.button_car);
+
 
         /*drawer*/
         navigationView = (NavigationView)findViewById(R.id.navList);
         mDrawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
         mActivityTitle = getTitle().toString();
 
+        /*progress bar*/
+        mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
+        mTextView = (TextView) findViewById(R.id.text_view);
+        button_confirm = (Button) findViewById(R.id.Conferma);
         /*switch*/
         GPL = (Switch) findViewById(R.id.GPL);
         diesel = (Switch) findViewById(R.id.Diesel);
@@ -153,20 +191,16 @@ public class MapsActivity extends AppCompatActivity
         elettrico = (Switch) findViewById(R.id.Elettrico);
         benzina = (Switch) findViewById(R.id.Benzina);
 
+        /*setup drawer*/
         addDrawerItems();
         setupDrawer();
+
+        /*fai partire l'async task e la progress bar*/
+        mMyTask = new DownloadURL().execute(station);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         /*fine drawer*/
-
-        // inizializza le preferenze
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
-
-        // trova gli oggetti che rappresentano i bottoni e li salva come campi d'istanza
-        button_here = (ImageButton) findViewById(R.id.button_here);
-        button_car = (ImageButton) findViewById(R.id.button_car);
-        //button_confirm = (Button) findViewById(R.id.Conferma);
 
         // API per i servizi di localizzazione
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -239,15 +273,17 @@ public class MapsActivity extends AppCompatActivity
                 new NavigationView.OnNavigationItemSelectedListener() {
                     @Override
                     public boolean onNavigationItemSelected(MenuItem menuItem) {
-                        switch (menuItem.getItemId()) {
+                        /*toglilo perchè non c'è più un menu*/
+                        switch (menuItem.getItemId()) {/*
                             case R.id.parti:
                                 final EditText partenza = (EditText)findViewById(R.id.partenza);
                                 final EditText destinazione = (EditText)findViewById(R.id.destinazione);
                                 String part = partenza.getText().toString();
-                                String dest = destinazione.getText().toString();
+                                String dest = destinazione.getText().toString();*/
                                 /*chiama il navigatore di google maps in qualche modo*/
+                                //break;
 
-                            case R.id.conferma:
+                            case R.id.Conferma:
                                 /*controlla quali switch sono checked e posiziona i marker corretti*/
                                 if(navigationView.getMenu().getItem(R.id.Benzina).isChecked()){
                                      /*fai qualcosa*/
@@ -264,6 +300,14 @@ public class MapsActivity extends AppCompatActivity
                                 if(navigationView.getMenu().getItem(R.id.Diesel).isChecked()){
                                      /*fai qualcosa*/
                                 }
+                                try {
+                                    station = mMyTask.get();
+                                    /*filtra*/
+                                } catch (InterruptedException | ExecutionException e) {
+                                    e.printStackTrace();
+                                }
+                                markers = putMarkersFromMapItems(station);
+                                break;
                         }
 
                         mDrawerLayout.closeDrawers();
@@ -273,6 +317,7 @@ public class MapsActivity extends AppCompatActivity
     }
 
     private void setupDrawer() {
+
         mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.string.drawer_open, R.string.drawer_close) {
 
             /** Called when a drawer has settled in a completely open state. */
@@ -567,7 +612,7 @@ public class MapsActivity extends AppCompatActivity
 
         //demo();
         //parser non funzionante
-        parseStation();
+        //parseStation();
     }
 
     /**
@@ -719,17 +764,175 @@ public class MapsActivity extends AppCompatActivity
         });
     }
 
-
-    HashMap<Integer,Station> station = new HashMap();
-    private Collection<Marker> markers;
-
-    void parseStation(){
+    /*void parseStation(){
         try {
+            togliglo e mettilo nel drawer!
             station = new DownloadURL().execute(station).get();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
        markers = putMarkersFromMapItems(station);
+    }*/
+public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,HashMap<Integer,Station>> {
+
+        public static final int TIMEOUT = 1000000000;
+        int tab;
+        @Override
+        protected HashMap<Integer,Station> doInBackground(HashMap<Integer,Station>[] station) {
+            URL url_benz = null;
+            URL url_costi = null;
+            try {
+                url_benz = new URL("http://www.sviluppoeconomico.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv");
+                url_costi = new URL("http://www.sviluppoeconomico.gov.it/images/exportCSV/prezzo_alle_8.csv");
+            } catch (MalformedURLException e1) {
+                e1.printStackTrace();
+            }
+            HttpURLConnection c1;
+            HttpURLConnection c2;
+            c1 = null;
+            c2 = null;
+            try {
+                c1 = (HttpURLConnection) url_benz.openConnection();
+            } catch (IOException e2) {
+                e2.printStackTrace();
+            }
+            try {
+                c1.setRequestMethod("GET");
+            } catch (ProtocolException e) {
+                e.printStackTrace();
+            }
+            //c1.setConnectTimeout(TIMEOUT);
+            c1.setReadTimeout(TIMEOUT);
+            try {
+                c1.connect();
+                InputStream is1 = c1.getInputStream();
+                Reader reader1 = new InputStreamReader(is1);
+                BufferedReader br1 = new BufferedReader(reader1);
+            /*dovrebbe eliminare la prima riga delle tabelle*/
+                br1.readLine();
+                CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
+                int i = 0;
+               // mTextView.setText("Scaricamento dati...");
+                List<CsvRowParser.Row> rows1 = parser_benz.parse();
+                c1.disconnect();
+                 /*fa riconnettere c2 finchè non ottengo i dati*/
+                while(rows1.size() == 0) {
+                    c2.connect();
+                    rows1 = parser_benz.parse();
+                    c2.disconnect();
+                }
+                /*numero delle righe da parsare*/
+                int count = rows1.size();
+                tab = 1;
+            /*parsa la prima tabella*/
+                for (CsvRowParser.Row row : rows1) {
+                    try {
+                        i++;
+                        String ID = row.get("idImpianto");
+                        String lat = row.get("Latitudine");
+                        String lon = row.get("Longitudine");
+                        String provincia = row.get("Provincia");
+                        String comune = row.get("Comune");
+                        String indirizzo = row.get("Indirizzo");
+                        String nome = row.get("Nome Impianto");
+                        String bandiera = row.get("Bandiera");
+                        String gestore = row.get("Gestore");
+
+                        HashMap<String,Double> carburanti_costo = new HashMap<>();
+
+                        LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
+                        int id = Integer.parseInt(ID);
+                        station[0].put(id,new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng,carburanti_costo));
+                        Log.d(TAG, "onMapReady;" + nome + i + Arrays.toString(row.getValues()));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                 /*avanzamento progress bar*/
+                 publishProgress((int) (((i+1) / (float) count) * 100));
+                }
+                try {
+                    c2 = (HttpURLConnection) url_costi.openConnection();
+                } catch (IOException e2) {
+                    e2.printStackTrace();
+                }
+                try {
+                    c2.setRequestMethod("GET");
+                } catch (ProtocolException e) {
+                    e.printStackTrace();
+                }
+                // c2.setConnectTimeout(TIMEOUT);
+                c2.setReadTimeout(TIMEOUT);
+                c2.connect();
+                InputStream is2 = c2.getInputStream();
+                Reader reader2 = new InputStreamReader(is2);
+                BufferedReader br2 = new BufferedReader(reader2);
+                br2.readLine();
+                CsvRowParser parser_costi = new CsvRowParser(br2, true, ";", null);
+               // mTextView.setText("Scaricamento dati...");
+                List<CsvRowParser.Row> rows2 = parser_costi.parse();
+                c2.disconnect();
+                /*fa riconnettere c2 finchè non ottengo i dati*/
+                while(rows2.size() == 0) {
+                    c2.connect();
+                    rows2 = parser_costi.parse();
+                    c2.disconnect();
+                }
+                tab = 2;
+                count = rows2.size();
+                i = 0;
+            /*parsa la seconda tabella*/
+                for(CsvRowParser.Row row : rows2) {
+                    int id = 0;
+                    try {
+                        id = Integer.parseInt(row.get("idImpianto"));
+                        double prezzo = Double.parseDouble(row.get("prezzo"));
+                    /*cerco la stazione con l'id corretto e la rimuovo dall'hashMap*/
+                        Station temp = station[0].remove(id);
+                    /*controllo se l'id corrisponde ad una stazione esistente*/
+                        if(temp != null) {
+                        /*aggiungo alla hashMAp dei carburanti il carburante e il prezzo appena trovati*/
+                            temp.getCarburantiCosto().put(row.get("descCarburante"), prezzo);
+                        /*rimetto la stazione nella HashMap*/
+                            station[0].put(id, temp);
+                            Log.d(TAG, "onMapReady;" + i + Arrays.toString(row.getValues()));
+                            i++;
+                        }
+                    } catch (RecoverableParseException e) {
+                        e.printStackTrace();
+                    }
+                    publishProgress((int) (((i+1) / (float) count) * 100));
+                }
+            } catch (IOException  e) {
+                e.printStackTrace();
+            }
+            return station[0];
+        }
+        //ProgressDialog asyncDialog = new ProgressDialog(MapsActivity.this);
+
+        @Override
+        protected void onPreExecute() {
+            /*
+            asyncDialog.setMessage("Please wait until parsing finished");
+            asyncDialog.show();*/
+            mTextView.setText("Inizio caricamento...");
+        }
+        //dopo aver parsato una riga
+        @Override
+        protected void onProgressUpdate(Integer... progress) {
+            // Display the progress on text view
+            mTextView.setText("Parsing "+tab+"/2..."+ progress[0]+"%");
+            // Update the progress bar
+            mProgressBar.setProgress(progress[0]);
+        }
+        @Override
+        protected void onPostExecute(HashMap<Integer,Station> stations) {
+            //ora inutile
+            /*if(stations.size()==0 )
+                mTextView.setText("Connessione Fallita, riavviare l'app.");*/
+            mTextView.setVisibility(View.GONE);
+            mProgressBar.setVisibility(View.GONE);
+        }
     }
+
 
 }
