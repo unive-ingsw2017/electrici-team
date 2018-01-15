@@ -117,7 +117,7 @@ public class MapsActivity extends AppCompatActivity
      * fanno parte degli oggetti gestiti manualmente dal codice.
      */
     protected ImageButton button_here, button_car;
-    protected Button button_confirm;
+    protected Button button_confirm,button_go,button_credits,button_privacy;
     /**
      * API per i servizi di localizzazione.
      */
@@ -141,7 +141,6 @@ public class MapsActivity extends AppCompatActivity
     private ActionBarDrawerToggle mDrawerToggle;
     private DrawerLayout mDrawerLayout;
     private String mActivityTitle;
-    private Menu mMenu;
 
     /*bottoni del drawer*/
     protected Switch GPL,diesel,benzina,metano,elettrico;
@@ -183,7 +182,15 @@ public class MapsActivity extends AppCompatActivity
         /*progress bar*/
         mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
         mTextView = (TextView) findViewById(R.id.text_view);
+
+        /*aggiungici l'azione*/
         button_confirm = (Button) findViewById(R.id.Conferma);
+        button_go = (Button) findViewById(R.id.Parti);
+
+        button_credits = (Button) findViewById(R.id.Crediti);
+        button_privacy = (Button) findViewById(R.id.Privacy);
+
+
         /*switch*/
         GPL = (Switch) findViewById(R.id.GPL);
         diesel = (Switch) findViewById(R.id.Diesel);
@@ -192,7 +199,7 @@ public class MapsActivity extends AppCompatActivity
         benzina = (Switch) findViewById(R.id.Benzina);
 
         /*setup drawer*/
-        addDrawerItems();
+        //addDrawerItems();
         setupDrawer();
 
         /*fai partire l'async task e la progress bar*/
@@ -229,8 +236,57 @@ public class MapsActivity extends AppCompatActivity
                     Log.d(TAG, "no current position available");
             }
         });
-    }
 
+        button_credits.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "credits button clicked");
+                // Start InfoActivity.class
+                Intent myIntent = new Intent(MapsActivity.this,
+                        InfoActivity.class);
+                startActivity(myIntent);
+            }
+        });
+        button_privacy.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "privacy button clicked");
+                // Start Privacy.class
+                Intent myIntent = new Intent(MapsActivity.this,
+                        PrivacyActivity.class);
+                startActivity(myIntent);
+            }
+        });
+        button_confirm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(GPL.isChecked()){
+
+                }
+                if(benzina.isChecked()){
+
+                }
+                if(diesel.isChecked()){
+
+                }
+                if(metano.isChecked()){
+
+                }
+                if(elettrico.isChecked()){
+
+                }
+                try {
+                    /*pulisci la mappa dai marker,almeno credo*/
+                    gMap.clear();
+                    station = mMyTask.get();
+                    /*filtra*/
+                    markers = putMarkersFromMapItems(station);
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
 
     // ciclo di vita della app
     //
@@ -268,41 +324,41 @@ public class MapsActivity extends AppCompatActivity
         gMap.clear();
     }
     /*per drawer*/
-    private void addDrawerItems() {
+    /*private void addDrawerItems() {
         navigationView.setNavigationItemSelectedListener(
                 new NavigationView.OnNavigationItemSelectedListener() {
                     @Override
                     public boolean onNavigationItemSelected(MenuItem menuItem) {
-                        /*toglilo perchè non c'è più un menu*/
-                        switch (menuItem.getItemId()) {/*
+                        toglilo perchè non c'è più un menu
+                        switch (menuItem.getItemId()) {
                             case R.id.parti:
                                 final EditText partenza = (EditText)findViewById(R.id.partenza);
                                 final EditText destinazione = (EditText)findViewById(R.id.destinazione);
                                 String part = partenza.getText().toString();
-                                String dest = destinazione.getText().toString();*/
-                                /*chiama il navigatore di google maps in qualche modo*/
+                                String dest = destinazione.getText().toString();
+                                chiama il navigatore di google maps in qualche modo
                                 //break;
 
                             case R.id.Conferma:
-                                /*controlla quali switch sono checked e posiziona i marker corretti*/
+
                                 if(navigationView.getMenu().getItem(R.id.Benzina).isChecked()){
-                                     /*fai qualcosa*/
+
                                 }
                                 if(navigationView.getMenu().getItem(R.id.Metano).isChecked()){
-                                     /*fai qualcosa*/
+
                                 }
                                 if(navigationView.getMenu().getItem(R.id.GPL).isChecked()){
-                                     /*fai qualcosa*/
+
                                 }
                                 if(navigationView.getMenu().getItem(R.id.Elettrico).isChecked()){
-                                     /*fai qualcosa*/
+
                                 }
                                 if(navigationView.getMenu().getItem(R.id.Diesel).isChecked()){
-                                     /*fai qualcosa*/
+
                                 }
                                 try {
                                     station = mMyTask.get();
-                                    /*filtra*/
+
                                 } catch (InterruptedException | ExecutionException e) {
                                     e.printStackTrace();
                                 }
@@ -314,7 +370,7 @@ public class MapsActivity extends AppCompatActivity
                         return true;
                     }
                 });
-    }
+    }*/
 
     private void setupDrawer() {
 
@@ -779,6 +835,16 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
         int tab;
         @Override
         protected HashMap<Integer,Station> doInBackground(HashMap<Integer,Station>[] station) {
+
+            /*------------------------PROVA QUESTO CODICE PER GLI ERRORI---------------------------*/
+            /*HttpClient httpclient = new DefaultHttpClient();
+            HttpGet httpGet = new HttpGet(downloadUrl);
+            HttpResponse response = httpclient.execute(httpGet);
+            HttpEntity entity = response.
+                    InputStream is = entity.getContent();*/
+            /*-------------------------------------------------------------------------------------*/
+
+
             URL url_benz = null;
             URL url_costi = null;
             try {
@@ -787,6 +853,7 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
             } catch (MalformedURLException e1) {
                 e1.printStackTrace();
             }
+
             HttpURLConnection c1;
             HttpURLConnection c2;
             c1 = null;
@@ -808,19 +875,19 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
                 InputStream is1 = c1.getInputStream();
                 Reader reader1 = new InputStreamReader(is1);
                 BufferedReader br1 = new BufferedReader(reader1);
-            /*dovrebbe eliminare la prima riga delle tabelle*/
+            /*elimina la prima riga della tabella*/
                 br1.readLine();
                 CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
                 int i = 0;
                // mTextView.setText("Scaricamento dati...");
                 List<CsvRowParser.Row> rows1 = parser_benz.parse();
                 c1.disconnect();
-                 /*fa riconnettere c2 finchè non ottengo i dati*/
+                 /*fa riconnettere c1 finchè non ottengo i dati
                 while(rows1.size() == 0) {
-                    c2.connect();
+                    c1.connect();
                     rows1 = parser_benz.parse();
-                    c2.disconnect();
-                }
+                    c1.disconnect();
+                }*/
                 /*numero delle righe da parsare*/
                 int count = rows1.size();
                 tab = 1;
@@ -871,12 +938,12 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
                // mTextView.setText("Scaricamento dati...");
                 List<CsvRowParser.Row> rows2 = parser_costi.parse();
                 c2.disconnect();
-                /*fa riconnettere c2 finchè non ottengo i dati*/
+                /*fa riconnettere c2 finchè non ottengo i dati, ma non funziona
                 while(rows2.size() == 0) {
                     c2.connect();
                     rows2 = parser_costi.parse();
                     c2.disconnect();
-                }
+                }*/
                 tab = 2;
                 count = rows2.size();
                 i = 0;
@@ -902,7 +969,7 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
                     }
                     publishProgress((int) (((i+1) / (float) count) * 100));
                 }
-            } catch (IOException  e) {
+            } catch (Exception  e) {
                 e.printStackTrace();
             }
             return station[0];
@@ -926,9 +993,8 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
         }
         @Override
         protected void onPostExecute(HashMap<Integer,Station> stations) {
-            //ora inutile
-            /*if(stations.size()==0 )
-                mTextView.setText("Connessione Fallita, riavviare l'app.");*/
+            if(stations.size()==0 )
+                mTextView.setText("Connessione Fallita, riavviare l'app.");
             mTextView.setVisibility(View.GONE);
             mProgressBar.setVisibility(View.GONE);
         }

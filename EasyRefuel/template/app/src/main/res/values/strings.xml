@@ -45,5 +45,6 @@
     <!-- ricerca-->
     <string name="search_hint">Cerca distributori</string>
     <string name="action_search">Ricerca</string>
+    <string name="title_activity_privacy">PrivacyActivity</string>
 
 </resources>
