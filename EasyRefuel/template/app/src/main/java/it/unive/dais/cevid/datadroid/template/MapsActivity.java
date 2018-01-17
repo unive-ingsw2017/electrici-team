@@ -29,13 +29,19 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.menu.MenuAdapter;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -83,6 +89,11 @@ import it.unive.dais.cevid.datadroid.lib.parser.AsyncParser;
 import it.unive.dais.cevid.datadroid.lib.parser.CsvRowParser;
 import it.unive.dais.cevid.datadroid.lib.parser.RecoverableParseException;
 import it.unive.dais.cevid.datadroid.lib.util.MapItem;
+import okhttp3.OkHttpClient;
+import java.io.IOException;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 import static android.content.ContentValues.TAG;
 
@@ -116,7 +127,7 @@ public class MapsActivity extends AppCompatActivity
      * Pulsanti in sovraimpressione gestiti da questa app. Da non confondere con i pulsanti che GoogleMaps mette in sovraimpressione e che non
      * fanno parte degli oggetti gestiti manualmente dal codice.
      */
-    protected ImageButton button_here, button_car;
+    protected ImageButton button_here,button_maps,button_nav,button_ibrida,button_satellite,button_rilievo,button_normale;
     protected Button button_confirm,button_go,button_credits,button_privacy;
     /**
      * API per i servizi di localizzazione.
@@ -171,7 +182,8 @@ public class MapsActivity extends AppCompatActivity
 
         // trova gli oggetti che rappresentano i bottoni e li salva come campi d'istanza
         button_here = (ImageButton) findViewById(R.id.button_here);
-        button_car = (ImageButton) findViewById(R.id.button_car);
+        button_maps = (ImageButton) findViewById(R.id.button_maps);
+        button_nav = (ImageButton) findViewById(R.id.button_nav);
 
 
         /*drawer*/
@@ -286,6 +298,16 @@ public class MapsActivity extends AppCompatActivity
                 }
             }
         });
+
+
+       button_maps.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onPopupClick(v);
+            }
+        });
+
+       button_nav.setClickable(false);
     }
 
     // ciclo di vita della app
@@ -323,6 +345,35 @@ public class MapsActivity extends AppCompatActivity
         super.onDestroy();
         gMap.clear();
     }
+
+
+    public void onPopupClick(View view) {
+        // get a reference to the already created main layout
+        //FrameLayout mainLayout = (FrameLayout) findViewById(R.id.map);
+
+        // inflate the layout of the popup window
+        LayoutInflater inflater = (LayoutInflater)getSystemService(LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.popup_layout, null);
+
+        // create the popup window
+        int width = 1220;
+        int height = 520;
+        boolean focusable = true; // lets taps outside the popup also dismiss it
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
+
+        // show the popup window
+        popupWindow.showAtLocation(view, Gravity.CENTER_VERTICAL, 0, 0);
+
+        // dismiss the popup window when touched
+        popupView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                popupWindow.dismiss();
+                return true;
+            }
+        });
+    }
+
     /*per drawer*/
     /*private void addDrawerItems() {
         navigationView.setNavigationItemSelectedListener(
@@ -581,7 +632,7 @@ public class MapsActivity extends AppCompatActivity
     @Override
     public void onMapClick(LatLng latLng) {
         // nascondi il pulsante della navigazione (non quello di google maps, ma il nostro pulsante custom)
-        button_car.setVisibility(View.INVISIBLE);
+        //button_nav.setVisibility(View.INVISIBLE);
     }
 
     /**
@@ -650,8 +701,9 @@ public class MapsActivity extends AppCompatActivity
         gMap.setOnMarkerClickListener(this);
 
         UiSettings uis = gMap.getUiSettings();
+        /*messo false per nascondere i bottoni*/
         uis.setZoomGesturesEnabled(true);
-        uis.setMyLocationButtonEnabled(true);
+        uis.setMyLocationButtonEnabled(false);
         gMap.setOnMyLocationButtonClickListener(
                 new GoogleMap.OnMyLocationButtonClickListener() {
                     @Override
@@ -661,7 +713,7 @@ public class MapsActivity extends AppCompatActivity
                     }
                 });
         uis.setCompassEnabled(true);
-        uis.setZoomControlsEnabled(true);
+        uis.setZoomControlsEnabled(false);
         uis.setMapToolbarEnabled(true);
 
         applyMapSettings();
@@ -714,8 +766,9 @@ public class MapsActivity extends AppCompatActivity
     @Override
     public boolean onMarkerClick(final Marker marker) {
         marker.showInfoWindow();
-        button_car.setVisibility(View.VISIBLE);
-        button_car.setOnClickListener(new View.OnClickListener() {
+        //button_nav.setVisibility(View.VISIBLE);
+        button_nav.setClickable(true);
+        button_nav.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Snackbar.make(v, R.string.msg_button_car, Snackbar.LENGTH_SHORT);
@@ -833,15 +886,105 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
 
         public static final int TIMEOUT = 1000000000;
         int tab;
+
         @Override
         protected HashMap<Integer,Station> doInBackground(HashMap<Integer,Station>[] station) {
 
             /*------------------------PROVA QUESTO CODICE PER GLI ERRORI---------------------------*/
-            /*HttpClient httpclient = new DefaultHttpClient();
-            HttpGet httpGet = new HttpGet(downloadUrl);
-            HttpResponse response = httpclient.execute(httpGet);
-            HttpEntity entity = response.
-                    InputStream is = entity.getContent();*/
+            /*OkHttpClient client = new OkHttpClient();
+
+            Request request = new Request.Builder()
+                    .url("http://www.sviluppoeconomico.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv")
+                    .build();
+
+            try {
+                Response response = client.newCall(request).execute();
+                InputStream is = response.body().byteStream();
+                Reader reader1 = new InputStreamReader(is);
+                BufferedReader br1 = new BufferedReader(reader1);
+                br1.readLine();
+                CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
+                List<CsvRowParser.Row> rows1 = parser_benz.parse();
+                int i=0;
+                int count = rows1.size();
+
+                for (CsvRowParser.Row row : rows1) {
+                    try {
+                        i++;
+                        String ID = row.get("idImpianto");
+                        String lat = row.get("Latitudine");
+                        String lon = row.get("Longitudine");
+                        String provincia = row.get("Provincia");
+                        String comune = row.get("Comune");
+                        String indirizzo = row.get("Indirizzo");
+                        String nome = row.get("Nome Impianto");
+                        String bandiera = row.get("Bandiera");
+                        String gestore = row.get("Gestore");
+
+                        HashMap<String,Double> carburanti_costo = new HashMap<>();
+
+                        LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
+                        int id = Integer.parseInt(ID);
+                        station[0].put(id,new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng,carburanti_costo));
+                        Log.d(TAG, "onMapReady;" + nome + i + Arrays.toString(row.getValues()));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    publishProgress((int) (((i+1) / (float) count) * 100));
+                }
+
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            */
+            /*-------------------------------------------------------------------------------------*/
+            /*--------------------------------------PARSER LOCALE----------------------------------*/
+            /*InputStream is = getResources().openRawResource(R.raw.anagrafica_impianti_attivi);
+            Reader reader1 = new InputStreamReader(is);
+            BufferedReader br1 = new BufferedReader(reader1);
+            try {
+                br1.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
+            List<CsvRowParser.Row> rows1 = null;
+
+
+            try {
+                rows1 = parser_benz.parse();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            int count = rows1.size(),i = 0;
+
+            for (CsvRowParser.Row row : rows1) {
+                try {
+                    i++;
+                    String ID = row.get("idImpianto");
+                    String lat = row.get("Latitudine");
+                    String lon = row.get("Longitudine");
+                    String provincia = row.get("Provincia");
+                    String comune = row.get("Comune");
+                    String indirizzo = row.get("Indirizzo");
+                    String nome = row.get("Nome Impianto");
+                    String bandiera = row.get("Bandiera");
+                    String gestore = row.get("Gestore");
+
+                    HashMap<String,Double> carburanti_costo = new HashMap<>();
+
+                    LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
+                    int id = Integer.parseInt(ID);
+                    station[0].put(id,new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng,carburanti_costo));
+                    Log.d(TAG, "onMapReady;" + nome + i + Arrays.toString(row.getValues()));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                publishProgress((int) (((i+1) / (float) count) * 100));
+            }*/
             /*-------------------------------------------------------------------------------------*/
 
 
@@ -853,7 +996,6 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
             } catch (MalformedURLException e1) {
                 e1.printStackTrace();
             }
-
             HttpURLConnection c1;
             HttpURLConnection c2;
             c1 = null;
@@ -868,30 +1010,24 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
             } catch (ProtocolException e) {
                 e.printStackTrace();
             }
-            //c1.setConnectTimeout(TIMEOUT);
             c1.setReadTimeout(TIMEOUT);
             try {
                 c1.connect();
                 InputStream is1 = c1.getInputStream();
                 Reader reader1 = new InputStreamReader(is1);
                 BufferedReader br1 = new BufferedReader(reader1);
-            /*elimina la prima riga della tabella*/
+                /*elimina la prima riga della tabella*/
                 br1.readLine();
                 CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
                 int i = 0;
                // mTextView.setText("Scaricamento dati...");
                 List<CsvRowParser.Row> rows1 = parser_benz.parse();
                 c1.disconnect();
-                 /*fa riconnettere c1 finchè non ottengo i dati
-                while(rows1.size() == 0) {
-                    c1.connect();
-                    rows1 = parser_benz.parse();
-                    c1.disconnect();
-                }*/
+
                 /*numero delle righe da parsare*/
                 int count = rows1.size();
                 tab = 1;
-            /*parsa la prima tabella*/
+                /*parsa la prima tabella*/
                 for (CsvRowParser.Row row : rows1) {
                     try {
                         i++;
@@ -938,28 +1074,28 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
                // mTextView.setText("Scaricamento dati...");
                 List<CsvRowParser.Row> rows2 = parser_costi.parse();
                 c2.disconnect();
-                /*fa riconnettere c2 finchè non ottengo i dati, ma non funziona
+                /*fa riconnettere c2 finchè non ottengo i dati, ma non funziona*/
                 while(rows2.size() == 0) {
                     c2.connect();
                     rows2 = parser_costi.parse();
                     c2.disconnect();
-                }*/
+                }
                 tab = 2;
                 count = rows2.size();
                 i = 0;
-            /*parsa la seconda tabella*/
+                /*parsa la seconda tabella*/
                 for(CsvRowParser.Row row : rows2) {
                     int id = 0;
                     try {
                         id = Integer.parseInt(row.get("idImpianto"));
                         double prezzo = Double.parseDouble(row.get("prezzo"));
-                    /*cerco la stazione con l'id corretto e la rimuovo dall'hashMap*/
+                        //cerco la stazione con l'id corretto e la rimuovo dall'hashMap
                         Station temp = station[0].remove(id);
-                    /*controllo se l'id corrisponde ad una stazione esistente*/
+                        //controllo se l'id corrisponde ad una stazione esistente
                         if(temp != null) {
-                        /*aggiungo alla hashMAp dei carburanti il carburante e il prezzo appena trovati*/
+                            //aggiungo alla hashMAp dei carburanti il carburante e il prezzo appena trovati
                             temp.getCarburantiCosto().put(row.get("descCarburante"), prezzo);
-                        /*rimetto la stazione nella HashMap*/
+                            //rimetto la stazione nella HashMap
                             station[0].put(id, temp);
                             Log.d(TAG, "onMapReady;" + i + Arrays.toString(row.getValues()));
                             i++;
