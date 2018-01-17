@@ -36,6 +36,13 @@ dependencies {
     compile 'com.google.android.gms:play-services-location:11.6.2'
     compile 'com.android.support:design:25.4.0'
     compile 'com.squareup.okhttp3:okhttp:3.8.1'
+
+    /*aggiunte mie*/
+    compile 'com.google.maps.android:android-maps-utils:0.4+'
+    compile 'com.mcxiaoke.volley:library-aar:1.0.0'
+    /*--------------------*/
+
     testCompile 'junit:junit:4.12'
     compile project(path: ':lib')
+
 }

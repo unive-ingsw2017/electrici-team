@@ -43,7 +43,22 @@
                 android:background="@color/trans"
                 android:src="@drawable/button_nav"/>
         </LinearLayout>
-
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_gravity="end|bottom"
+            android:gravity="end"
+            android:layout_height="48dp"
+            android:layout_width="48dp"
+            android:layout_marginBottom="20dp"
+            android:layout_marginRight="10dp">
+            <ImageButton
+                android:visibility="invisible"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:id="@+id/button_exit"
+                android:background="@color/trans"
+                android:src="@mipmap/exit"/>
+        </LinearLayout>
         <LinearLayout
             android:orientation="vertical"
             android:layout_gravity="start|bottom"

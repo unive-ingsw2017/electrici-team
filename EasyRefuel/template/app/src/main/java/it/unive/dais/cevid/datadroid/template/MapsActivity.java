@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -34,19 +35,16 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.Response;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
@@ -64,10 +62,18 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -89,13 +95,15 @@ import it.unive.dais.cevid.datadroid.lib.parser.AsyncParser;
 import it.unive.dais.cevid.datadroid.lib.parser.CsvRowParser;
 import it.unive.dais.cevid.datadroid.lib.parser.RecoverableParseException;
 import it.unive.dais.cevid.datadroid.lib.util.MapItem;
-import okhttp3.OkHttpClient;
-import java.io.IOException;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import com.android.volley.RequestQueue;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 
-import static android.content.ContentValues.TAG;
+import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_HYBRID;
+import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_NORMAL;
+import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_SATELLITE;
+import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_TERRAIN;
 
 /**
  * Questa classe è la componente principale del toolkit: fornisce servizi primari per un'app basata su Google Maps, tra cui localizzazione, pulsanti
@@ -127,7 +135,7 @@ public class MapsActivity extends AppCompatActivity
      * Pulsanti in sovraimpressione gestiti da questa app. Da non confondere con i pulsanti che GoogleMaps mette in sovraimpressione e che non
      * fanno parte degli oggetti gestiti manualmente dal codice.
      */
-    protected ImageButton button_here,button_maps,button_nav,button_ibrida,button_satellite,button_rilievo,button_normale;
+    protected ImageButton button_here,button_maps,button_nav,button_exit,button_ibrida,button_satellite,button_rilievo,button_normale;
     protected Button button_confirm,button_go,button_credits,button_privacy;
     /**
      * API per i servizi di localizzazione.
@@ -163,6 +171,18 @@ public class MapsActivity extends AppCompatActivity
 
     HashMap<Integer,Station> station = new HashMap();
     private Collection<Marker> markers;
+    private Marker own_marker;
+
+    /*per disegnare percorsi sulla mappa*/
+    //From -> the first coordinate from where we need to calculate the distance
+    private double fromLongitude;
+    private double fromLatitude;
+
+    //To -> the second coordinate to where we need to calculate the distance
+    private double toLongitude;
+    private double toLatitude;
+    /*linea per il percorso*/
+    Polyline line;
 
 
     /**
@@ -184,6 +204,7 @@ public class MapsActivity extends AppCompatActivity
         button_here = (ImageButton) findViewById(R.id.button_here);
         button_maps = (ImageButton) findViewById(R.id.button_maps);
         button_nav = (ImageButton) findViewById(R.id.button_nav);
+        button_exit = (ImageButton) findViewById(R.id.button_exit);
 
 
         /*drawer*/
@@ -195,12 +216,14 @@ public class MapsActivity extends AppCompatActivity
         mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
         mTextView = (TextView) findViewById(R.id.text_view);
 
-        /*aggiungici l'azione*/
+        /*bottoni del drawer*/
         button_confirm = (Button) findViewById(R.id.Conferma);
         button_go = (Button) findViewById(R.id.Parti);
 
         button_credits = (Button) findViewById(R.id.Crediti);
         button_privacy = (Button) findViewById(R.id.Privacy);
+
+        /*textinput del drawer*/
 
 
         /*switch*/
@@ -237,10 +260,12 @@ public class MapsActivity extends AppCompatActivity
                 updateCurrentPosition();
                 if (hereMarker != null) hereMarker.remove();
                 if (currentPosition != null) {
+                    BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.mipmap.position_here);
                     MarkerOptions opts = new MarkerOptions();
                     opts.position(currentPosition);
                     opts.title(getString(R.string.marker_title));
                     opts.snippet(String.format("lat: %g\nlng: %g", currentPosition.latitude, currentPosition.longitude));
+                    opts.icon(icon);
                     hereMarker = gMap.addMarker(opts);
                     if (gMap != null)
                         gMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentPosition, getResources().getInteger(R.integer.zoomFactor_button_here)));
@@ -259,7 +284,7 @@ public class MapsActivity extends AppCompatActivity
                 startActivity(myIntent);
             }
         });
-        button_privacy.setOnClickListener(new View.OnClickListener(){
+        /*button_privacy.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "privacy button clicked");
@@ -268,7 +293,8 @@ public class MapsActivity extends AppCompatActivity
                         PrivacyActivity.class);
                 startActivity(myIntent);
             }
-        });
+        });*/
+        /*filtra le stazioni di servizio--DA FARE*/
         button_confirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -299,15 +325,21 @@ public class MapsActivity extends AppCompatActivity
             }
         });
 
-
        button_maps.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onPopupClick(v);
             }
         });
-
-       button_nav.setClickable(false);
+       /*rimuove la linea del percorso*/
+       button_exit.setOnClickListener(new View.OnClickListener() {
+           @Override
+           public void onClick(View v) {
+               line.remove();
+               button_exit.setVisibility(View.INVISIBLE);
+           }
+       });
+       button_nav.setEnabled(false);
     }
 
     // ciclo di vita della app
@@ -355,21 +387,47 @@ public class MapsActivity extends AppCompatActivity
         LayoutInflater inflater = (LayoutInflater)getSystemService(LAYOUT_INFLATER_SERVICE);
         View popupView = inflater.inflate(R.layout.popup_layout, null);
 
-        // create the popup window
+        //crea i pulsanti per il popup
+        button_ibrida = (ImageButton) popupView.findViewById(R.id.ibrida);
+        button_normale = (ImageButton) popupView.findViewById(R.id.normale);
+        button_satellite = (ImageButton) popupView.findViewById(R.id.satellite);
+        button_rilievo = (ImageButton) popupView.findViewById(R.id.rilievo);
+
+        // crea il popup
         int width = 1220;
         int height = 520;
         boolean focusable = true; // lets taps outside the popup also dismiss it
         final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
 
-        // show the popup window
+        // mostra la finestra del popup
         popupWindow.showAtLocation(view, Gravity.CENTER_VERTICAL, 0, 0);
 
-        // dismiss the popup window when touched
-        popupView.setOnTouchListener(new View.OnTouchListener() {
+        button_ibrida.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
+            public void onClick(View v) {
+                gMap.setMapType(MAP_TYPE_HYBRID);
                 popupWindow.dismiss();
-                return true;
+            }
+        });
+        button_normale.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                gMap.setMapType(MAP_TYPE_NORMAL);
+                popupWindow.dismiss();
+            }
+        });
+        button_rilievo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                gMap.setMapType(MAP_TYPE_TERRAIN);
+                popupWindow.dismiss();
+            }
+        });
+        button_satellite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                gMap.setMapType(MAP_TYPE_SATELLITE);
+                popupWindow.dismiss();
             }
         });
     }
@@ -517,10 +575,11 @@ public class MapsActivity extends AppCompatActivity
      */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        //menu del prof, a noi non serve, al momento,ma non cancellatelo
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.maps_with_options, menu);
 
-        /*ricerca*/
+        /*ricerca--DA FARE*/
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
         SearchView searchView = (SearchView) menu.findItem(R.id.action_search)
                .getActionView();
@@ -541,7 +600,7 @@ public class MapsActivity extends AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem item) {
         if (mDrawerToggle.onOptionsItemSelected(item)) {
             return true;
-        }
+        }/*
         switch (item.getItemId()) {
             case R.id.MENU_SETTINGS:
                 startActivity(new Intent(this, SettingsActivity.class));
@@ -549,7 +608,7 @@ public class MapsActivity extends AppCompatActivity
             case R.id.MENU_INFO:
                 startActivity(new Intent(this, InfoActivity.class));
                 break;
-        }
+        }*/
         return super.onOptionsItemSelected(item);
     }
 
@@ -633,6 +692,11 @@ public class MapsActivity extends AppCompatActivity
     public void onMapClick(LatLng latLng) {
         // nascondi il pulsante della navigazione (non quello di google maps, ma il nostro pulsante custom)
         //button_nav.setVisibility(View.INVISIBLE);
+        //disattiva il pulsante della navigazione
+        button_nav.setEnabled(false);
+        //rimuove il marker dell'utente
+        if(own_marker!=null)
+            own_marker.remove();
     }
 
     /**
@@ -643,7 +707,14 @@ public class MapsActivity extends AppCompatActivity
      */
     @Override
     public void onMapLongClick(LatLng latLng) {
-
+        //aggiunge un marker sulla mappa e rimuove quello vecchio
+        if(own_marker != null)
+            own_marker.remove();
+        BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.mipmap.position_temp);
+        MarkerOptions marker = new MarkerOptions().position(latLng);
+        marker.title("lat:" + latLng.latitude + "\nlng:" + latLng.longitude);
+        marker.icon(icon);
+        own_marker = gMap.addMarker(marker);
     }
 
     /**
@@ -701,7 +772,7 @@ public class MapsActivity extends AppCompatActivity
         gMap.setOnMarkerClickListener(this);
 
         UiSettings uis = gMap.getUiSettings();
-        /*messo false per nascondere i bottoni*/
+        /*messo a false per nascondere i bottoni*/
         uis.setZoomGesturesEnabled(true);
         uis.setMyLocationButtonEnabled(false);
         gMap.setOnMyLocationButtonClickListener(
@@ -714,13 +785,10 @@ public class MapsActivity extends AppCompatActivity
                 });
         uis.setCompassEnabled(true);
         uis.setZoomControlsEnabled(false);
-        uis.setMapToolbarEnabled(true);
+        //settato a false per togliere i pulsanti di google maps
+        uis.setMapToolbarEnabled(false);
 
         applyMapSettings();
-
-        //demo();
-        //parser non funzionante
-        //parseStation();
     }
 
     /**
@@ -766,14 +834,22 @@ public class MapsActivity extends AppCompatActivity
     @Override
     public boolean onMarkerClick(final Marker marker) {
         marker.showInfoWindow();
-        //button_nav.setVisibility(View.VISIBLE);
-        button_nav.setClickable(true);
+        button_nav.setEnabled(true);
+        gpsCheck();
+        updateCurrentPosition();
+        /*cliccando questo pulsante si ottiene una lina colorata che indica il percorso*/
         button_nav.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Snackbar.make(v, R.string.msg_button_car, Snackbar.LENGTH_SHORT);
                 if (currentPosition != null) {
-                    navigate(currentPosition, marker.getPosition());
+                    fromLatitude = currentPosition.latitude;
+                    fromLongitude = currentPosition.longitude;
+                    toLatitude = marker.getPosition().latitude;
+                    toLongitude = marker.getPosition().longitude;
+                    getDirection();
+                    /*apre il navigatore di google maps*/
+                    //navigate(currentPosition, marker.getPosition());
                 }
             }
         });
@@ -799,12 +875,16 @@ public class MapsActivity extends AppCompatActivity
         }
         return r;
     }
-    /*putMarkers from Item che usa le HashMap invece che le liste*/
+    /*putMarkers from Item che usa le HashMap invece che le liste, e un marker modificato*/
     @NonNull
     protected <K,V extends MapItem> Collection<Marker> putMarkersFromMapItems(HashMap<K,V> l) {
         Collection<Marker> r = new ArrayList<>();
         for (MapItem i : l.values()) {
-            MarkerOptions opts = new MarkerOptions().title(i.getTitle()).position(i.getPosition()).snippet(i.getDescription());
+            BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.mipmap.station);
+            MarkerOptions opts = new MarkerOptions().position(i.getPosition());
+            opts.title(i.getTitle());
+            opts.snippet(i.getDescription());
+            opts.icon(icon);
             r.add(gMap.addMarker(opts));
         }
         return r;
@@ -872,16 +952,7 @@ public class MapsActivity extends AppCompatActivity
             }
         });
     }
-
-    /*void parseStation(){
-        try {
-            togliglo e mettilo nel drawer!
-            station = new DownloadURL().execute(station).get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-       markers = putMarkersFromMapItems(station);
-    }*/
+/*asynctask che scarica le due tabelle dai 2 url e le parsa, a volte va a volte no, non so perchè*/
 public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,HashMap<Integer,Station>> {
 
         public static final int TIMEOUT = 1000000000;
@@ -891,6 +962,7 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
         protected HashMap<Integer,Station> doInBackground(HashMap<Integer,Station>[] station) {
 
             /*------------------------PROVA QUESTO CODICE PER GLI ERRORI---------------------------*/
+            /*----------------------------edit:va ancora peggio dell'altro-------------------------*/
             /*OkHttpClient client = new OkHttpClient();
 
             Request request = new Request.Builder()
@@ -986,7 +1058,6 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
                 publishProgress((int) (((i+1) / (float) count) * 100));
             }*/
             /*-------------------------------------------------------------------------------------*/
-
 
             URL url_benz = null;
             URL url_costi = null;
@@ -1103,6 +1174,7 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
                     } catch (RecoverableParseException e) {
                         e.printStackTrace();
                     }
+                    /*avanzamento progress bar*/
                     publishProgress((int) (((i+1) / (float) count) * 100));
                 }
             } catch (Exception  e) {
@@ -1112,6 +1184,7 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
         }
         //ProgressDialog asyncDialog = new ProgressDialog(MapsActivity.this);
 
+        /*eseguito dal main thread prima di doInBackground*/
         @Override
         protected void onPreExecute() {
             /*
@@ -1119,7 +1192,7 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
             asyncDialog.show();*/
             mTextView.setText("Inizio caricamento...");
         }
-        //dopo aver parsato una riga
+        //dopo aver parsato ogni riga fa questo
         @Override
         protected void onProgressUpdate(Integer... progress) {
             // Display the progress on text view
@@ -1127,6 +1200,7 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
             // Update the progress bar
             mProgressBar.setProgress(progress[0]);
         }
+        //eseguito dal main thread al termine del parsing
         @Override
         protected void onPostExecute(HashMap<Integer,Station> stations) {
             if(stations.size()==0 )
@@ -1135,6 +1209,131 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
             mProgressBar.setVisibility(View.GONE);
         }
     }
+
+
+    /*--------------------------Codice per disegnare un percorso sulla mapap-------------------------------*/
+    //crea l'URL per la richiesta
+    public String makeURL (double sourcelat, double sourcelog, double destlat, double destlog ){
+        StringBuilder urlString = new StringBuilder();
+        urlString.append("https://maps.googleapis.com/maps/api/directions/json");
+        urlString.append("?origin=");// from
+        urlString.append(Double.toString(sourcelat));
+        urlString.append(",");
+        urlString
+                .append(Double.toString( sourcelog));
+        urlString.append("&destination=");// to
+        urlString
+                .append(Double.toString( destlat));
+        urlString.append(",");
+        urlString.append(Double.toString(destlog));
+        urlString.append("&sensor=false&mode=driving&alternatives=true");
+        urlString.append("&key=AIzaSyCcrQQSdE1FuTjNVkQ7xg0dFlsVDBqcWvQ");
+        return urlString.toString();
+    }
+
+    private void getDirection(){
+        //crea l'url
+        String url = makeURL(fromLatitude, fromLongitude, toLatitude, toLongitude);
+
+        //Mostra una finestra di dialogo prima di caricare il percorso
+        final ProgressDialog loading = ProgressDialog.show(this, "Tracciamento percoso ", "Attendi...", false, false);
+
+        //Crea una requestString
+        StringRequest stringRequest = new StringRequest(url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        loading.dismiss();
+                        //Calling the method drawPath to draw the path
+                        drawPath(response);
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        loading.dismiss();
+                    }
+                });
+        //Adding the request to request queue
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        requestQueue.add(stringRequest);
+    }
+
+    //disegna il percorso, result è la risposta del server alla richiesta
+    public void drawPath(String  result) {
+        //racxoglie le coordinate di partenza e destinazione
+        LatLng from = new LatLng(fromLatitude,fromLongitude);
+        LatLng to = new LatLng(toLatitude,toLongitude);
+
+        try {
+            //Parsa il json che contiene i punti del percorso
+            final JSONObject json = new JSONObject(result);
+            String status = (String) json.get("status");
+            /*questo non va sistemalo*/
+            if (status.equals("ZER0_RESULTS")){
+                Toast.makeText(this,String.valueOf("Non ci sono percorsi disponibili"),Toast.LENGTH_SHORT).show();
+            }
+            JSONArray routeArray = json.getJSONArray("routes");
+            JSONObject routes = routeArray.getJSONObject(0);
+            JSONObject overviewPolylines = routes.getJSONObject("overview_polyline");
+            String encodedString = overviewPolylines.getString("points");
+            List<LatLng> list = decodePoly(encodedString);
+            line = gMap.addPolyline(new PolylineOptions()
+                    .addAll(list)
+                    .width(20)
+                    .color(Color.RED)
+                    .geodesic(true)
+            );
+            button_exit.setVisibility(View.VISIBLE);
+
+            //calcola la distanza in metri(da modificare forse)
+            JSONArray legsArray = routes.getJSONArray("legs");
+            JSONObject legs = legsArray.getJSONObject(0);
+            JSONObject distanceObj = legs.getJSONObject("distance");
+            //mostra la distanza
+            String parsedDistance=distanceObj.getString("text");
+            Toast.makeText(this,String.valueOf(parsedDistance+" Meters"),Toast.LENGTH_SHORT).show();
+
+
+        }
+        catch (JSONException e) {
+
+        }
+    }
+    /*restituisce una lista di posizioni per creare il percorso*/
+    private List<LatLng> decodePoly(String encoded) {
+        List<LatLng> poly = new ArrayList<>();
+        int index = 0, len = encoded.length();
+        int lat = 0, lng = 0;
+
+        while (index < len) {
+            int b, shift = 0, result = 0;
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lat += dlat;
+
+            shift = 0;
+            result = 0;
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lng += dlng;
+
+            LatLng p = new LatLng( (((double) lat / 1E5)),
+                    (((double) lng / 1E5) ));
+            poly.add(p);
+        }
+
+        return poly;
+    }
+    /*-----------------------------------------------------------------------------------------------------*/
 
 
 }
