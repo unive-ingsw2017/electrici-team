@@ -44,6 +44,6 @@ public class Station implements MapItem {
     public HashMap<String,Double> getCarburantiCosto(){return Carburanti_costo;}
     public String getBandiera(){return Bandiera;}
     public LatLng getPosition(){return position;}
-    public String getDescription(){return getTitle()+" "+getBandiera()+" "+getGestore()+" "+"indirizzo:"+getIndirizzo()+" "+getComune()+" "+getProvincia();}//+" "+getCarburanti()+getCosto();}
+    public String getDescription(){return getTitle()+" "+getBandiera()+" "+getGestore()+" "+"indirizzo:"+getIndirizzo()+" "+getComune()+" "+getProvincia()+" "+getCarburantiCosto();}
     }
 

@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.location.Location;
 import android.net.Uri;
@@ -76,9 +77,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -100,6 +105,8 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import static android.database.sqlite.SQLiteDatabase.OPEN_READONLY;
+import static android.database.sqlite.SQLiteDatabase.openDatabase;
 import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_HYBRID;
 import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_NORMAL;
 import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_SATELLITE;
@@ -184,7 +191,6 @@ public class MapsActivity extends AppCompatActivity
     /*linea per il percorso*/
     Polyline line;
 
-
     /**
      * Questo metodo viene invocato quando viene inizializzata questa activity.
      * Si tratta di una sorta di "main" dell'intera activity.
@@ -238,11 +244,16 @@ public class MapsActivity extends AppCompatActivity
         setupDrawer();
 
         /*fai partire l'async task e la progress bar*/
-        mMyTask = new DownloadURL().execute(station);
+      //  mMyTask = new DownloadURL().execute(station);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         /*fine drawer*/
+
+        /*helper per il db*/
+        DBHelper db = new DBHelper(this);
+        db.openDataBase();
+
 
         // API per i servizi di localizzazione
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -313,15 +324,12 @@ public class MapsActivity extends AppCompatActivity
                 if(elettrico.isChecked()){
 
                 }
-                try {
                     /*pulisci la mappa dai marker,almeno credo*/
                     gMap.clear();
-                    station = mMyTask.get();
                     /*filtra*/
+
                     markers = putMarkersFromMapItems(station);
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
-                }
+
             }
         });
 
@@ -789,6 +797,7 @@ public class MapsActivity extends AppCompatActivity
         uis.setMapToolbarEnabled(false);
 
         applyMapSettings();
+
     }
 
     /**
@@ -880,10 +889,11 @@ public class MapsActivity extends AppCompatActivity
     protected <K,V extends MapItem> Collection<Marker> putMarkersFromMapItems(HashMap<K,V> l) {
         Collection<Marker> r = new ArrayList<>();
         for (MapItem i : l.values()) {
+            MarkerOptions opts = new MarkerOptions();
             BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.mipmap.station);
-            MarkerOptions opts = new MarkerOptions().position(i.getPosition());
             opts.title(i.getTitle());
             opts.snippet(i.getDescription());
+            opts.position(i.getPosition());
             opts.icon(icon);
             r.add(gMap.addMarker(opts));
         }
@@ -952,264 +962,6 @@ public class MapsActivity extends AppCompatActivity
             }
         });
     }
-/*asynctask che scarica le due tabelle dai 2 url e le parsa, a volte va a volte no, non so perchè*/
-public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,HashMap<Integer,Station>> {
-
-        public static final int TIMEOUT = 1000000000;
-        int tab;
-
-        @Override
-        protected HashMap<Integer,Station> doInBackground(HashMap<Integer,Station>[] station) {
-
-            /*------------------------PROVA QUESTO CODICE PER GLI ERRORI---------------------------*/
-            /*----------------------------edit:va ancora peggio dell'altro-------------------------*/
-            /*OkHttpClient client = new OkHttpClient();
-
-            Request request = new Request.Builder()
-                    .url("http://www.sviluppoeconomico.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv")
-                    .build();
-
-            try {
-                Response response = client.newCall(request).execute();
-                InputStream is = response.body().byteStream();
-                Reader reader1 = new InputStreamReader(is);
-                BufferedReader br1 = new BufferedReader(reader1);
-                br1.readLine();
-                CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
-                List<CsvRowParser.Row> rows1 = parser_benz.parse();
-                int i=0;
-                int count = rows1.size();
-
-                for (CsvRowParser.Row row : rows1) {
-                    try {
-                        i++;
-                        String ID = row.get("idImpianto");
-                        String lat = row.get("Latitudine");
-                        String lon = row.get("Longitudine");
-                        String provincia = row.get("Provincia");
-                        String comune = row.get("Comune");
-                        String indirizzo = row.get("Indirizzo");
-                        String nome = row.get("Nome Impianto");
-                        String bandiera = row.get("Bandiera");
-                        String gestore = row.get("Gestore");
-
-                        HashMap<String,Double> carburanti_costo = new HashMap<>();
-
-                        LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
-                        int id = Integer.parseInt(ID);
-                        station[0].put(id,new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng,carburanti_costo));
-                        Log.d(TAG, "onMapReady;" + nome + i + Arrays.toString(row.getValues()));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                    publishProgress((int) (((i+1) / (float) count) * 100));
-                }
-
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            */
-            /*-------------------------------------------------------------------------------------*/
-            /*--------------------------------------PARSER LOCALE----------------------------------*/
-            /*InputStream is = getResources().openRawResource(R.raw.anagrafica_impianti_attivi);
-            Reader reader1 = new InputStreamReader(is);
-            BufferedReader br1 = new BufferedReader(reader1);
-            try {
-                br1.readLine();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
-            List<CsvRowParser.Row> rows1 = null;
-
-
-            try {
-                rows1 = parser_benz.parse();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            int count = rows1.size(),i = 0;
-
-            for (CsvRowParser.Row row : rows1) {
-                try {
-                    i++;
-                    String ID = row.get("idImpianto");
-                    String lat = row.get("Latitudine");
-                    String lon = row.get("Longitudine");
-                    String provincia = row.get("Provincia");
-                    String comune = row.get("Comune");
-                    String indirizzo = row.get("Indirizzo");
-                    String nome = row.get("Nome Impianto");
-                    String bandiera = row.get("Bandiera");
-                    String gestore = row.get("Gestore");
-
-                    HashMap<String,Double> carburanti_costo = new HashMap<>();
-
-                    LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
-                    int id = Integer.parseInt(ID);
-                    station[0].put(id,new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng,carburanti_costo));
-                    Log.d(TAG, "onMapReady;" + nome + i + Arrays.toString(row.getValues()));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                publishProgress((int) (((i+1) / (float) count) * 100));
-            }*/
-            /*-------------------------------------------------------------------------------------*/
-
-            URL url_benz = null;
-            URL url_costi = null;
-            try {
-                url_benz = new URL("http://www.sviluppoeconomico.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv");
-                url_costi = new URL("http://www.sviluppoeconomico.gov.it/images/exportCSV/prezzo_alle_8.csv");
-            } catch (MalformedURLException e1) {
-                e1.printStackTrace();
-            }
-            HttpURLConnection c1;
-            HttpURLConnection c2;
-            c1 = null;
-            c2 = null;
-            try {
-                c1 = (HttpURLConnection) url_benz.openConnection();
-            } catch (IOException e2) {
-                e2.printStackTrace();
-            }
-            try {
-                c1.setRequestMethod("GET");
-            } catch (ProtocolException e) {
-                e.printStackTrace();
-            }
-            c1.setReadTimeout(TIMEOUT);
-            try {
-                c1.connect();
-                InputStream is1 = c1.getInputStream();
-                Reader reader1 = new InputStreamReader(is1);
-                BufferedReader br1 = new BufferedReader(reader1);
-                /*elimina la prima riga della tabella*/
-                br1.readLine();
-                CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
-                int i = 0;
-               // mTextView.setText("Scaricamento dati...");
-                List<CsvRowParser.Row> rows1 = parser_benz.parse();
-                c1.disconnect();
-
-                /*numero delle righe da parsare*/
-                int count = rows1.size();
-                tab = 1;
-                /*parsa la prima tabella*/
-                for (CsvRowParser.Row row : rows1) {
-                    try {
-                        i++;
-                        String ID = row.get("idImpianto");
-                        String lat = row.get("Latitudine");
-                        String lon = row.get("Longitudine");
-                        String provincia = row.get("Provincia");
-                        String comune = row.get("Comune");
-                        String indirizzo = row.get("Indirizzo");
-                        String nome = row.get("Nome Impianto");
-                        String bandiera = row.get("Bandiera");
-                        String gestore = row.get("Gestore");
-
-                        HashMap<String,Double> carburanti_costo = new HashMap<>();
-
-                        LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
-                        int id = Integer.parseInt(ID);
-                        station[0].put(id,new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng,carburanti_costo));
-                        Log.d(TAG, "onMapReady;" + nome + i + Arrays.toString(row.getValues()));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                 /*avanzamento progress bar*/
-                 publishProgress((int) (((i+1) / (float) count) * 100));
-                }
-                try {
-                    c2 = (HttpURLConnection) url_costi.openConnection();
-                } catch (IOException e2) {
-                    e2.printStackTrace();
-                }
-                try {
-                    c2.setRequestMethod("GET");
-                } catch (ProtocolException e) {
-                    e.printStackTrace();
-                }
-                // c2.setConnectTimeout(TIMEOUT);
-                c2.setReadTimeout(TIMEOUT);
-                c2.connect();
-                InputStream is2 = c2.getInputStream();
-                Reader reader2 = new InputStreamReader(is2);
-                BufferedReader br2 = new BufferedReader(reader2);
-                br2.readLine();
-                CsvRowParser parser_costi = new CsvRowParser(br2, true, ";", null);
-               // mTextView.setText("Scaricamento dati...");
-                List<CsvRowParser.Row> rows2 = parser_costi.parse();
-                c2.disconnect();
-                /*fa riconnettere c2 finchè non ottengo i dati, ma non funziona*/
-                while(rows2.size() == 0) {
-                    c2.connect();
-                    rows2 = parser_costi.parse();
-                    c2.disconnect();
-                }
-                tab = 2;
-                count = rows2.size();
-                i = 0;
-                /*parsa la seconda tabella*/
-                for(CsvRowParser.Row row : rows2) {
-                    int id = 0;
-                    try {
-                        id = Integer.parseInt(row.get("idImpianto"));
-                        double prezzo = Double.parseDouble(row.get("prezzo"));
-                        //cerco la stazione con l'id corretto e la rimuovo dall'hashMap
-                        Station temp = station[0].remove(id);
-                        //controllo se l'id corrisponde ad una stazione esistente
-                        if(temp != null) {
-                            //aggiungo alla hashMAp dei carburanti il carburante e il prezzo appena trovati
-                            temp.getCarburantiCosto().put(row.get("descCarburante"), prezzo);
-                            //rimetto la stazione nella HashMap
-                            station[0].put(id, temp);
-                            Log.d(TAG, "onMapReady;" + i + Arrays.toString(row.getValues()));
-                            i++;
-                        }
-                    } catch (RecoverableParseException e) {
-                        e.printStackTrace();
-                    }
-                    /*avanzamento progress bar*/
-                    publishProgress((int) (((i+1) / (float) count) * 100));
-                }
-            } catch (Exception  e) {
-                e.printStackTrace();
-            }
-            return station[0];
-        }
-        //ProgressDialog asyncDialog = new ProgressDialog(MapsActivity.this);
-
-        /*eseguito dal main thread prima di doInBackground*/
-        @Override
-        protected void onPreExecute() {
-            /*
-            asyncDialog.setMessage("Please wait until parsing finished");
-            asyncDialog.show();*/
-            mTextView.setText("Inizio caricamento...");
-        }
-        //dopo aver parsato ogni riga fa questo
-        @Override
-        protected void onProgressUpdate(Integer... progress) {
-            // Display the progress on text view
-            mTextView.setText("Parsing "+tab+"/2..."+ progress[0]+"%");
-            // Update the progress bar
-            mProgressBar.setProgress(progress[0]);
-        }
-        //eseguito dal main thread al termine del parsing
-        @Override
-        protected void onPostExecute(HashMap<Integer,Station> stations) {
-            if(stations.size()==0 )
-                mTextView.setText("Connessione Fallita, riavviare l'app.");
-            mTextView.setVisibility(View.GONE);
-            mProgressBar.setVisibility(View.GONE);
-        }
-    }
-
 
     /*--------------------------Codice per disegnare un percorso sulla mapap-------------------------------*/
     //crea l'URL per la richiesta
@@ -1334,6 +1086,271 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
         return poly;
     }
     /*-----------------------------------------------------------------------------------------------------*/
+
+
+
+/*asynctask che scarica le due tabelle dai 2 url e le parsa, a volte va a volte no, non so perchè*//*
+public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,HashMap<Integer,Station>> {
+
+        public static final int TIMEOUT = 1000000000;
+        int tab;
+
+        @Override
+        protected HashMap<Integer,Station> doInBackground(HashMap<Integer,Station>[] station) {
+
+            /*------------------------PROVA QUESTO CODICE PER GLI ERRORI---------------------------*/
+            /*----------------------------edit:va ancora peggio dell'altro-------------------------*/
+            /*OkHttpClient client = new OkHttpClient();
+
+            Request request = new Request.Builder()
+                    .url("http://www.sviluppoeconomico.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv")
+                    .build();
+
+            try {
+                Response response = client.newCall(request).execute();
+                InputStream is = response.body().byteStream();
+                Reader reader1 = new InputStreamReader(is);
+                BufferedReader br1 = new BufferedReader(reader1);
+                br1.readLine();
+                CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
+                List<CsvRowParser.Row> rows1 = parser_benz.parse();
+                int i=0;
+                int count = rows1.size();
+
+                for (CsvRowParser.Row row : rows1) {
+                    try {
+                        i++;
+                        String ID = row.get("idImpianto");
+                        String lat = row.get("Latitudine");
+                        String lon = row.get("Longitudine");
+                        String provincia = row.get("Provincia");
+                        String comune = row.get("Comune");
+                        String indirizzo = row.get("Indirizzo");
+                        String nome = row.get("Nome Impianto");
+                        String bandiera = row.get("Bandiera");
+                        String gestore = row.get("Gestore");
+
+                        HashMap<String,Double> carburanti_costo = new HashMap<>();
+
+                        LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
+                        int id = Integer.parseInt(ID);
+                        station[0].put(id,new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng,carburanti_costo));
+                        Log.d(TAG, "onMapReady;" + nome + i + Arrays.toString(row.getValues()));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    publishProgress((int) (((i+1) / (float) count) * 100));
+                }
+
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            */
+            /*-------------------------------------------------------------------------------------*/
+            /*--------------------------------------PARSER LOCALE----------------------------------*/
+            /*InputStream is = getResources().openRawResource(R.raw.distributori);
+            Reader reader1 = new InputStreamReader(is);
+            BufferedReader br1 = new BufferedReader(reader1);
+
+            try {
+                br1.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
+            List<CsvRowParser.Row> rows1 = null;
+
+
+            try {
+                rows1 = parser_benz.parse();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            int count = rows1.size(),i = 0;
+
+            for (CsvRowParser.Row row : rows1) {
+                try {
+                    i++;
+                    String ID = row.get("idImpianto");
+                    int id = Integer.parseInt(ID);
+
+                    String lat = row.get("Latitudine");
+                    String lon = row.get("Longitudine");
+                    String provincia = row.get("Provincia");
+                    String comune = row.get("Comune");
+                    String indirizzo = row.get("Indirizzo");
+                    String nome = row.get("Nome Impianto");
+                    String bandiera = row.get("Bandiera");
+                    String gestore = row.get("Gestore");
+
+                    HashMap<String,Double> carburanti_costo = new HashMap<>();
+
+                    LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
+                    station[0].put(id,new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng,carburanti_costo));
+                    Log.d(TAG, "onMapReady;" + nome + i + Arrays.toString(row.getValues()));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                publishProgress((int) (((i+1) / (float) count) * 100));
+            }*/
+            /*-------------------------------------------------------------------------------------*/
+/*
+            URL url_benz = null;
+            URL url_costi = null;
+            try {
+                url_benz = new URL("http://www.sviluppoeconomico.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv");
+                url_costi = new URL("http://www.sviluppoeconomico.gov.it/images/exportCSV/prezzo_alle_8.csv");
+            } catch (MalformedURLException e1) {
+                e1.printStackTrace();
+            }
+            HttpURLConnection c1;
+            HttpURLConnection c2;
+            c1 = null;
+            c2 = null;
+            try {
+                c1 = (HttpURLConnection) url_benz.openConnection();
+            } catch (IOException e2) {
+                e2.printStackTrace();
+            }
+            try {
+                c1.setRequestMethod("GET");
+            } catch (ProtocolException e) {
+                e.printStackTrace();
+            }
+            c1.setReadTimeout(TIMEOUT);
+            try {
+                c1.connect();
+                InputStream is1 = c1.getInputStream();
+                Reader reader1 = new InputStreamReader(is1);
+                BufferedReader br1 = new BufferedReader(reader1);
+                elimina la prima riga della tabella
+                br1.readLine();
+                CsvRowParser parser_benz = new CsvRowParser(br1, true, ";", null);
+                int i = 0;
+               // mTextView.setText("Scaricamento dati...");
+                List<CsvRowParser.Row> rows1 = parser_benz.parse();
+                c1.disconnect();
+
+                numero delle righe da parsare
+                int count = rows1.size();
+                tab = 1;
+                parsa la prima tabella
+                for (CsvRowParser.Row row : rows1) {
+                    try {
+                        i++;
+                        String ID = row.get("idImpianto");
+                        String lat = row.get("Latitudine");
+                        String lon = row.get("Longitudine");
+                        String provincia = row.get("Provincia");
+                        String comune = row.get("Comune");
+                        String indirizzo = row.get("Indirizzo");
+                        String nome = row.get("Nome Impianto");
+                        String bandiera = row.get("Bandiera");
+                        String gestore = row.get("Gestore");
+
+                        HashMap<String,Double> carburanti_costo = new HashMap<>();
+
+                        LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
+                        int id = Integer.parseInt(ID);
+                        station[0].put(id,new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng,carburanti_costo));
+                        Log.d(TAG, "onMapReady;" + nome + i + Arrays.toString(row.getValues()));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                 avanzamento progress bar
+                 publishProgress((int) (((i+1) / (float) count) * 100));
+                }
+                try {
+                    c2 = (HttpURLConnection) url_costi.openConnection();
+                } catch (IOException e2) {
+                    e2.printStackTrace();
+                }
+                try {
+                    c2.setRequestMethod("GET");
+                } catch (ProtocolException e) {
+                    e.printStackTrace();
+                }
+                // c2.setConnectTimeout(TIMEOUT);
+                c2.setReadTimeout(TIMEOUT);
+                c2.connect();
+                InputStream is2 = c2.getInputStream();
+                Reader reader2 = new InputStreamReader(is2);
+                BufferedReader br2 = new BufferedReader(reader2);
+                br2.readLine();
+                CsvRowParser parser_costi = new CsvRowParser(br2, true, ";", null);
+               // mTextView.setText("Scaricamento dati...");
+                List<CsvRowParser.Row> rows2 = parser_costi.parse();
+                c2.disconnect();
+                fa riconnettere c2 finchè non ottengo i dati, ma non funziona
+                while(rows2.size() == 0) {
+                    c2.connect();
+                    rows2 = parser_costi.parse();
+                    c2.disconnect();
+                }
+                tab = 2;
+                count = rows2.size();
+                i = 0;
+                parsa la seconda tabella
+                for(CsvRowParser.Row row : rows2) {
+                    int id = 0;
+                    try {
+                        id = Integer.parseInt(row.get("idImpianto"));
+                        double prezzo = Double.parseDouble(row.get("prezzo"));
+                        //cerco la stazione con l'id corretto e la rimuovo dall'hashMap
+                        Station temp = station[0].remove(id);
+                        //controllo se l'id corrisponde ad una stazione esistente
+                        if(temp != null) {
+                            //aggiungo alla hashMAp dei carburanti il carburante e il prezzo appena trovati
+                            temp.getCarburantiCosto().put(row.get("descCarburante"), prezzo);
+                            //rimetto la stazione nella HashMap
+                            station[0].put(id, temp);
+                            Log.d(TAG, "onMapReady;" + i + Arrays.toString(row.getValues()));
+                            i++;
+                        }
+                    } catch (RecoverableParseException e) {
+                        e.printStackTrace();
+                    }
+                    avanzamento progress bar
+                    publishProgress((int) (((i+1) / (float) count) * 100));
+                }
+            } catch (Exception  e) {
+                e.printStackTrace();
+            }
+            return station[0];
+        }
+        //ProgressDialog asyncDialog = new ProgressDialog(MapsActivity.this);
+
+        eseguito dal main thread prima di doInBackground
+        @Override
+        protected void onPreExecute() {
+
+            asyncDialog.setMessage("Please wait until parsing finished");
+            asyncDialog.show();
+            mTextView.setText("Inizio caricamento...");
+        }
+        //dopo aver parsato ogni riga fa questo
+        @Override
+        protected void onProgressUpdate(Integer... progress) {
+            // Display the progress on text view
+            mTextView.setText("Parsing "+tab+"/2..."+ progress[0]+"%");
+            // Update the progress bar
+            mProgressBar.setProgress(progress[0]);
+        }
+        //eseguito dal main thread al termine del parsing
+        @Override
+        protected void onPostExecute(HashMap<Integer,Station> stations) {
+            if(stations.size()==0 )
+                mTextView.setText("Connessione Fallita, riavviare l'app.");
+            mTextView.setVisibility(View.GONE);
+            mProgressBar.setVisibility(View.GONE);
+        }
+    }
+*/
+
+
 
 
 }
