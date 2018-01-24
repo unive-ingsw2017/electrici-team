@@ -43,7 +43,7 @@
     <string name="drawer_close">Drawer Chiuso</string>
 
     <!-- ricerca-->
-    <string name="search_hint">Cerca distributori</string>
+    <string name="search_hint">Cerca luoghi</string>
     <string name="action_search">Ricerca</string>
     <string name="title_activity_privacy">PrivacyActivity</string>
 

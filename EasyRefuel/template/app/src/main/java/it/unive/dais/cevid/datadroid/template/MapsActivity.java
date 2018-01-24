@@ -19,6 +19,7 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -77,37 +78,20 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import it.unive.dais.cevid.datadroid.lib.parser.AsyncParser;
-import it.unive.dais.cevid.datadroid.lib.parser.CsvRowParser;
-import it.unive.dais.cevid.datadroid.lib.parser.RecoverableParseException;
 import it.unive.dais.cevid.datadroid.lib.util.MapItem;
 import com.android.volley.RequestQueue;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
-import static android.database.sqlite.SQLiteDatabase.OPEN_READONLY;
-import static android.database.sqlite.SQLiteDatabase.openDatabase;
 import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_HYBRID;
 import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_NORMAL;
 import static com.google.android.gms.maps.GoogleMap.MAP_TYPE_SATELLITE;
@@ -235,7 +219,6 @@ public class MapsActivity extends AppCompatActivity
 
         /*textinput del drawer*/
 
-
         /*switch*/
         GPL = (Switch) findViewById(R.id.GPL);
         diesel = (Switch) findViewById(R.id.Diesel);
@@ -244,11 +227,7 @@ public class MapsActivity extends AppCompatActivity
         benzina = (Switch) findViewById(R.id.Benzina);
 
         /*setup drawer*/
-        //addDrawerItems();
         setupDrawer();
-
-        /*fai partire l'async task e la progress bar*/
-      //  mMyTask = new DownloadURL().execute(station);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
@@ -369,11 +348,14 @@ public class MapsActivity extends AppCompatActivity
         button_confirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                    /*pulisci la mappa dai marker,almeno credo*/
+                    /*pulisci la mappa dai marker*/
                     gMap.clear();
-                    /*filtra*/
-                    station = db.getStationFromFuel(s);
-                    markers = putMarkersFromMapItems(station);
+                    if(s != null) {
+                        /*filtra*/
+                        station = db.getStationFromFuel(s);
+                        markers = putMarkersFromMapItems(station);
+                        s = null;
+                    }
             }
         });
 
@@ -483,55 +465,6 @@ public class MapsActivity extends AppCompatActivity
             }
         });
     }
-
-    /*per drawer*/
-    /*private void addDrawerItems() {
-        navigationView.setNavigationItemSelectedListener(
-                new NavigationView.OnNavigationItemSelectedListener() {
-                    @Override
-                    public boolean onNavigationItemSelected(MenuItem menuItem) {
-                        toglilo perchè non c'è più un menu
-                        switch (menuItem.getItemId()) {
-                            case R.id.parti:
-                                final EditText partenza = (EditText)findViewById(R.id.partenza);
-                                final EditText destinazione = (EditText)findViewById(R.id.destinazione);
-                                String part = partenza.getText().toString();
-                                String dest = destinazione.getText().toString();
-                                chiama il navigatore di google maps in qualche modo
-                                //break;
-
-                            case R.id.Conferma:
-
-                                if(navigationView.getMenu().getItem(R.id.Benzina).isChecked()){
-
-                                }
-                                if(navigationView.getMenu().getItem(R.id.Metano).isChecked()){
-
-                                }
-                                if(navigationView.getMenu().getItem(R.id.GPL).isChecked()){
-
-                                }
-                                if(navigationView.getMenu().getItem(R.id.Elettrico).isChecked()){
-
-                                }
-                                if(navigationView.getMenu().getItem(R.id.Diesel).isChecked()){
-
-                                }
-                                try {
-                                    station = mMyTask.get();
-
-                                } catch (InterruptedException | ExecutionException e) {
-                                    e.printStackTrace();
-                                }
-                                markers = putMarkersFromMapItems(station);
-                                break;
-                        }
-
-                        mDrawerLayout.closeDrawers();
-                        return true;
-                    }
-                });
-    }*/
 
     private void setupDrawer() {
 
@@ -842,6 +775,16 @@ public class MapsActivity extends AppCompatActivity
 
         applyMapSettings();
 
+        /*prende i dati dalla ricerca e posiziona il marker*/
+        Intent i = getIntent();
+        Station s = i.getParcelableExtra("search_result");
+
+        if(s != null){
+            List<Station> st = new ArrayList<>();
+            st.add(s);
+            putMarkersFromMapItems(st);
+        }
+
     }
 
     /**
@@ -938,21 +881,6 @@ public class MapsActivity extends AppCompatActivity
         }
         return r;
     }
-    /*putMarkers from Item che usa le HashMap invece che le liste, e un marker modificato*/
-    /*@NonNull
-    protected <K,V extends MapItem> Collection<Marker> putMarkersFromMapItems(HashMap<K,V> l) {
-        Collection<Marker> r = new ArrayList<>();
-        for (MapItem i : l.values()) {
-            MarkerOptions opts = new MarkerOptions();
-            BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.mipmap.station);
-            opts.title(i.getTitle());
-            opts.snippet(i.getDescription());
-            opts.position(i.getPosition());
-            opts.icon(icon);
-            r.add(gMap.addMarker(opts));
-        }
-        return r;
-    }*/
 
     /**
      * Metodo proprietario di utilità per popolare la mappa con i dati provenienti da un parser.

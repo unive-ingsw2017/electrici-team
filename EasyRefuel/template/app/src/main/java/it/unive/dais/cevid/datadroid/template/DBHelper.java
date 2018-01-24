@@ -68,7 +68,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public List<Station> getStationFromFuel (String fuel){
 
-        String mQuery = " SELECT ID, descCarburante, Bandiera, Gestore, 'Nome Impianto', Indirizzo, Comune, Provincia, Latitudine, Longitudine " +
+        String mQuery = " SELECT ID, descCarburante, Bandiera, Gestore, [Nome Impianto], Indirizzo, Comune, Provincia, Latitudine, Longitudine " +
                 "FROM carburanti, distributori ON ID = idImpianto WHERE descCarburante LIKE ? GROUP BY ID ";
 
         Cursor cursor = myDataBase.rawQuery(mQuery, new String[]{'%'+fuel+'%'});
@@ -88,14 +88,47 @@ public class DBHelper extends SQLiteOpenHelper {
                     String lat = cursor.getString(8);
                     String lon = cursor.getString(9);
 
-                    LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
-                    Station s = new Station(ID, nomeImpianto, provincia, comune, indirizzo, gestore, bandiera, latlng, carburante);
+                    //LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
+                    Station s = new Station(ID, nomeImpianto, provincia, comune, indirizzo, gestore, bandiera,lat,lon,carburante);
                     stations.add(s);
                 } while (cursor.moveToNext());
             }
         }
         return stations;
     }
+    public List<Station> getStationFromPlace(String place){
+
+            String mQuery = " SELECT idImpianto, Bandiera, Gestore, [Nome Impianto], Indirizzo, Comune, Provincia, Latitudine, Longitudine " +
+                    "FROM distributori WHERE comune LIKE ? OR indirizzo LIKE ? OR provincia LIKE ? ";
+
+            Cursor cursor = myDataBase.rawQuery(mQuery, new String[]{'%'+place+'%','%'+place+'%','%'+place+'%'});
+            List<Station> stations = new ArrayList<>();
+
+            if (cursor.getCount()>0){
+                if (cursor.moveToFirst()){
+                    do {
+                        String ID = cursor.getString(0);
+                        String gestore = cursor.getString(1);
+                        String bandiera = cursor.getString(2);
+                        String nomeImpianto = cursor.getString(3);
+                        String indirizzo = cursor.getString(4);
+                        String comune = cursor.getString(5);
+                        String provincia = cursor.getString(6);
+                        String lat = cursor.getString(7);
+                        String lon = cursor.getString(8);
+
+                        String carburante = "";
+
+                        //LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
+                        Station s = new Station(ID, nomeImpianto, provincia, comune, indirizzo, gestore, bandiera,lat,lon,carburante);
+                        stations.add(s);
+                    } while (cursor.moveToNext());
+                }
+            }
+            return stations;
+    }
+
+
 
     /*Definisco un metodo per la copia del DB*/
     public void CopyDB(InputStream inputStream,OutputStream outputStream) throws IOException {
