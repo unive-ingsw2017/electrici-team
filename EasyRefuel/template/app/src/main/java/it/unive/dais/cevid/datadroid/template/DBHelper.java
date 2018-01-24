@@ -48,16 +48,15 @@ public class DBHelper extends SQLiteOpenHelper {
             String destPath = DB_PATH + DB_NAME;
             try {
                 File f = new File(destPath);
-                if (!f.exists()) {
-                f.mkdirs();
-                f.createNewFile();
-                CopyDB(myContext.getAssets().open("db"), new FileOutputStream(destPath + DB_NAME));
+               if (!f.exists()) {
+                    f.mkdirs();
+                    f.createNewFile();
+                    CopyDB(myContext.getAssets().open("db"), new FileOutputStream(destPath));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
             myDataBase = openDatabase(destPath,null,OPEN_READONLY);
-
         }
 
         @Override
@@ -69,8 +68,8 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public List<Station> getStationFromFuel (String fuel){
 
-        String mQuery = "SELECT c.idImpianto, c.descCarburante, d.Bandiera, d.Gestore, d.'Nome Impianto', d.Indirizzo, d.Comune, d.Provincia, d.Latitudine, d.Longitudine" +
-                "FROM distributori d JOIN carburanti c ON d.idImpianto = c.idImpianto WHERE c.descCarburante LIKE ?";
+        String mQuery = " SELECT ID, descCarburante, Bandiera, Gestore, 'Nome Impianto', Indirizzo, Comune, Provincia, Latitudine, Longitudine " +
+                "FROM carburanti, distributori ON ID = idImpianto WHERE descCarburante LIKE ? GROUP BY ID ";
 
         Cursor cursor = myDataBase.rawQuery(mQuery, new String[]{'%'+fuel+'%'});
         List<Station> stations = new ArrayList<>();
@@ -97,42 +96,6 @@ public class DBHelper extends SQLiteOpenHelper {
         }
         return stations;
     }
-
-
-
-       /* public List<Station> createList(SQLiteDatabase db){
-            String mQuery = "SELECT * FROM distributori";
-            Cursor c = db.rawQuery(mQuery,null);
-            List<Station> stations = new ArrayList<>();
-            if (c != null ) {
-                if  (c.moveToFirst()) {
-
-                    do {
-                    String ID = c.getString(0);
-                    String gestore = c.getString(1);
-                    String bandiera = c.getString(2);
-                    String nome = c.getString(4);
-                    String indirizzo = c.getString(5);
-                    String comune = c.getString(6);
-                    String provincia = c.getString(7);
-                    String lat = c.getString(8);
-                    String lon = c.getString(9);
-
-                    LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
-                    int id = Integer.parseInt(ID);
-                    List<String> carburanti = new ArrayList<>();
-
-                    Station s = new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng,carburanti);
-                    stations.add(s);
-                    }while (c.moveToNext());
-                    for(Station s : stations) {
-                        mQuery = "SELECT * FROM distributori";
-                    }
-
-                }
-            }
-            return stations;
-        }*/
 
     /*Definisco un metodo per la copia del DB*/
     public void CopyDB(InputStream inputStream,OutputStream outputStream) throws IOException {

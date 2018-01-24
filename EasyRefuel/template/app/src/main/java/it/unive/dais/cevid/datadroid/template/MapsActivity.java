@@ -38,6 +38,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
@@ -176,7 +177,7 @@ public class MapsActivity extends AppCompatActivity
     private AsyncTask<HashMap<Integer,Station>, Integer,HashMap<Integer,Station>> mMyTask;
     private TextView mTextView;
 
-    HashMap<Integer,Station> station = new HashMap();
+    List<Station> station = new ArrayList<>();
     private Collection<Marker> markers;
     private Marker own_marker;
 
@@ -190,6 +191,9 @@ public class MapsActivity extends AppCompatActivity
     private double toLatitude;
     /*linea per il percorso*/
     Polyline line;
+    /*per db*/
+    String s = new String();
+    DBHelper db;
 
     /**
      * Questo metodo viene invocato quando viene inizializzata questa activity.
@@ -251,7 +255,7 @@ public class MapsActivity extends AppCompatActivity
         /*fine drawer*/
 
         /*helper per il db*/
-        DBHelper db = new DBHelper(this);
+        db = new DBHelper(this);
         db.openDataBase();
 
 
@@ -305,31 +309,71 @@ public class MapsActivity extends AppCompatActivity
                 startActivity(myIntent);
             }
         });*/
+
         /*filtra le stazioni di servizio--DA FARE*/
+        GPL.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    s="gpl";
+                    metano.setChecked(false);
+                    diesel.setChecked(false);
+                    benzina.setChecked(false);
+                    elettrico.setChecked(false);
+                }
+            }
+        });
+        benzina.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    s = "benzina";
+                    metano.setChecked(false);
+                    diesel.setChecked(false);
+                    GPL.setChecked(false);
+                    elettrico.setChecked(false);
+                }
+            }
+        });
+        diesel.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    s = "diesel";
+                    metano.setChecked(false);
+                    GPL.setChecked(false);
+                    benzina.setChecked(false);
+                    elettrico.setChecked(false);
+                }
+            }
+        });
+        metano.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    s="metano";
+                    GPL.setChecked(false);
+                    diesel.setChecked(false);
+                    benzina.setChecked(false);
+                    elettrico.setChecked(false);
+                }
+            }
+        });
+        elettrico.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    s="elettrico";
+                    metano.setChecked(false);
+                    diesel.setChecked(false);
+                    benzina.setChecked(false);
+                    GPL.setChecked(false);
+                }
+            }
+        });
         button_confirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(GPL.isChecked()){
-
-                }
-                if(benzina.isChecked()){
-
-                }
-                if(diesel.isChecked()){
-
-                }
-                if(metano.isChecked()){
-
-                }
-                if(elettrico.isChecked()){
-
-                }
                     /*pulisci la mappa dai marker,almeno credo*/
                     gMap.clear();
                     /*filtra*/
-
+                    station = db.getStationFromFuel(s);
                     markers = putMarkersFromMapItems(station);
-
             }
         });
 
@@ -877,15 +921,25 @@ public class MapsActivity extends AppCompatActivity
 
     @NonNull
     protected <I extends MapItem> Collection<Marker> putMarkersFromMapItems(List<I> l) {
-        Collection<Marker> r = new ArrayList<>();
+        /*Collection<Marker> r = new ArrayList<>();
         for (MapItem i : l) {
             MarkerOptions opts = new MarkerOptions().title(i.getTitle()).position(i.getPosition()).snippet(i.getDescription());
-            r.add(gMap.addMarker(opts));
+            r.add(gMap.addMarker(opts));*/
+
+            Collection<Marker> r = new ArrayList<>();
+            for (MapItem i : l) {
+                MarkerOptions opts = new MarkerOptions();
+                BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.mipmap.station);
+                opts.title(i.getTitle());
+                opts.snippet(i.getDescription());
+                opts.position(i.getPosition());
+                opts.icon(icon);
+                r.add(gMap.addMarker(opts));
         }
         return r;
     }
     /*putMarkers from Item che usa le HashMap invece che le liste, e un marker modificato*/
-    @NonNull
+    /*@NonNull
     protected <K,V extends MapItem> Collection<Marker> putMarkersFromMapItems(HashMap<K,V> l) {
         Collection<Marker> r = new ArrayList<>();
         for (MapItem i : l.values()) {
@@ -898,7 +952,7 @@ public class MapsActivity extends AppCompatActivity
             r.add(gMap.addMarker(opts));
         }
         return r;
-    }
+    }*/
 
     /**
      * Metodo proprietario di utilità per popolare la mappa con i dati provenienti da un parser.
@@ -1349,8 +1403,5 @@ public class DownloadURL extends AsyncTask<HashMap<Integer,Station>, Integer,Has
         }
     }
 */
-
-
-
 
 }
