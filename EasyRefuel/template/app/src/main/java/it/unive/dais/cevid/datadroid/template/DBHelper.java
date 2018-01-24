@@ -56,7 +56,7 @@ public class DBHelper extends SQLiteOpenHelper {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            SQLiteDatabase db = openDatabase(destPath,null,OPEN_READONLY);
+            myDataBase = openDatabase(destPath,null,OPEN_READONLY);
 
         }
 
@@ -67,35 +67,69 @@ public class DBHelper extends SQLiteOpenHelper {
             super.close();
         }
 
-        /*private List<Station> getStationfromFuel(String fuel,SQLiteDatabase db){
-            String mQuery = "SELECT idImpianto FROM carburanti where descCarburante LIKE ?";
-            Cursor c = db.rawQuery(mQuery,new String[]{'%'+fuel+'%'});
-            List<String> ids = new ArrayList<>();
+    public List<Station> getStationFromFuel (String fuel){
+
+        String mQuery = "SELECT c.idImpianto, c.descCarburante, d.Bandiera, d.Gestore, d.'Nome Impianto', d.Indirizzo, d.Comune, d.Provincia, d.Latitudine, d.Longitudine" +
+                "FROM distributori d JOIN carburanti c ON d.idImpianto = c.idImpianto WHERE c.descCarburante LIKE ?";
+
+        Cursor cursor = myDataBase.rawQuery(mQuery, new String[]{'%'+fuel+'%'});
+        List<Station> stations = new ArrayList<>();
+
+        if (cursor.getCount()>0){
+            if (cursor.moveToFirst()){
+                do {
+                    String ID = cursor.getString(0);
+                    String carburante = cursor.getString(1);
+                    String bandiera = cursor.getString(2);
+                    String gestore = cursor.getString(3);
+                    String nomeImpianto = cursor.getString(4);
+                    String indirizzo = cursor.getString(5);
+                    String comune = cursor.getString(6);
+                    String provincia = cursor.getString(7);
+                    String lat = cursor.getString(8);
+                    String lon = cursor.getString(9);
+
+                    LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
+                    Station s = new Station(ID, nomeImpianto, provincia, comune, indirizzo, gestore, bandiera, latlng, carburante);
+                    stations.add(s);
+                } while (cursor.moveToNext());
+            }
+        }
+        return stations;
+    }
+
+
+
+       /* public List<Station> createList(SQLiteDatabase db){
+            String mQuery = "SELECT * FROM distributori";
+            Cursor c = db.rawQuery(mQuery,null);
+            List<Station> stations = new ArrayList<>();
             if (c != null ) {
                 if  (c.moveToFirst()) {
+
                     do {
-                        ids.add(c.getString(0));
+                    String ID = c.getString(0);
+                    String gestore = c.getString(1);
+                    String bandiera = c.getString(2);
+                    String nome = c.getString(4);
+                    String indirizzo = c.getString(5);
+                    String comune = c.getString(6);
+                    String provincia = c.getString(7);
+                    String lat = c.getString(8);
+                    String lon = c.getString(9);
+
+                    LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
+                    int id = Integer.parseInt(ID);
+                    List<String> carburanti = new ArrayList<>();
+
+                    Station s = new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng,carburanti);
+                    stations.add(s);
                     }while (c.moveToNext());
+                    for(Station s : stations) {
+                        mQuery = "SELECT * FROM distributori";
+                    }
+
                 }
-            }
-            List<Station> stations = new ArrayList<>();
-            for(String str: ids){
-                String query =  "SELECT * FROM distributori where idImpianto ="+str;
-
-                String ID = str;
-                String gestore = c.getString(1);
-                String bandiera = c.getString(2);
-                String nome = c.getString(4);
-                String indirizzo = c.getString(5);
-                String comune = c.getString(6);
-                String provincia = c.getString(7);
-                String lat = c.getString(8);
-                String lon = c.getString(9);
-
-                LatLng latlng = new LatLng(Double.parseDouble(lat), Double.parseDouble(lon));
-
-                Station s = new Station(ID, nome, provincia, comune, indirizzo, gestore, bandiera, latlng);
-                stations.add(s);
             }
             return stations;
         }*/

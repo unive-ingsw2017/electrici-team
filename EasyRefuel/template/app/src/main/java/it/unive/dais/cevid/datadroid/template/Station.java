@@ -19,11 +19,11 @@ public class Station implements MapItem {
     String Comune;
     String Indirizzo;
     String Gestore;
-    HashMap<String,Double> Carburanti_costo;
+    String Carburante;
     String Bandiera;
     LatLng position;
 
-    public Station(String ID, String Nome, String Provincia, String Comune, String Indirizzo, String Gestore, String Bandiera, LatLng position,HashMap<String,Double> Carburanti_costo){
+    public Station(String ID, String Nome, String Provincia, String Comune, String Indirizzo, String Gestore, String Bandiera, LatLng position,String Carburante){
         this.ID = ID;
         this.Nome = Nome;
         this.Provincia = Provincia;
@@ -32,7 +32,7 @@ public class Station implements MapItem {
         this.Gestore = Gestore;
         this.Bandiera = Bandiera;
         this.position = position;
-        this.Carburanti_costo = Carburanti_costo;
+        this.Carburante = Carburante;
     }
 
     public String getID(){return ID;}
@@ -41,9 +41,9 @@ public class Station implements MapItem {
     public String getComune(){return  Comune;}
     public  String getIndirizzo(){return Indirizzo;}
     public String getGestore(){return Gestore;}
-    public HashMap<String,Double> getCarburantiCosto(){return Carburanti_costo;}
+    public String getCarburante(){return Carburante;}
     public String getBandiera(){return Bandiera;}
     public LatLng getPosition(){return position;}
-    public String getDescription(){return getTitle()+" "+getBandiera()+" "+getGestore()+" "+"indirizzo:"+getIndirizzo()+" "+getComune()+" "+getProvincia()+" "+getCarburantiCosto();}
+    public String getDescription(){return getTitle()+" "+getBandiera()+" "+getGestore()+" "+"indirizzo:"+getIndirizzo()+" "+getComune()+" "+getProvincia()+" "+getCarburante();}
     }
 
