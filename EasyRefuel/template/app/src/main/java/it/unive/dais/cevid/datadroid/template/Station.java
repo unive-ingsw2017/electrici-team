@@ -68,7 +68,7 @@ public class Station implements MapItem, Parcelable,Serializable {
     }
     public String getLatitudine(){return latitudine;}
     public String getLongitudine(){return longitudine;}
-    public String getDescription(){return getTitle()+" "+getBandiera()+" "+getGestore()+" "+"indirizzo:"+getIndirizzo()+" "+getComune()+" "+getProvincia()+" "+getCarburante();}
+    public String getDescription(){return getIndirizzo()+ ", "+getComune() + ", "+getProvincia();}
 
 
     public static final Creator<Station> CREATOR = new Creator<Station>() {

@@ -200,7 +200,6 @@ public class MapsActivity extends AppCompatActivity
         button_nav = (ImageButton) findViewById(R.id.button_nav);
         button_exit = (ImageButton) findViewById(R.id.button_exit);
 
-
         /*drawer*/
         navigationView = (NavigationView)findViewById(R.id.navList);
         mDrawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
@@ -775,6 +774,27 @@ public class MapsActivity extends AppCompatActivity
 
         applyMapSettings();
 
+        // custom infowindow per la mappa
+        gMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+            // Use default InfoWindow frame
+            @Override
+            public View getInfoWindow(Marker arg0) { return null; }
+            // Defines the contents of the InfoWindow
+            @Override
+            public View getInfoContents(Marker arg0) {
+
+                View v = getLayoutInflater().inflate(R.layout.marker_info, null);
+
+                TextView nome = (TextView) v.findViewById(R.id.nome_imp);
+                TextView info = (TextView) v.findViewById(R.id.info_marker);
+
+                nome.setText(arg0.getTitle());
+                info.setText(arg0.getSnippet());
+
+                return v;
+            }
+        });
+
         /*prende i dati dalla ricerca e posiziona il marker*/
         Station s = null;
         Bundle b = getIntent().getExtras();
@@ -865,21 +885,20 @@ public class MapsActivity extends AppCompatActivity
 
 
     @NonNull
-    protected <I extends MapItem> Collection<Marker> putMarkersFromMapItems(List<I> l) {
-        /*Collection<Marker> r = new ArrayList<>();
-        for (MapItem i : l) {
-            MarkerOptions opts = new MarkerOptions().title(i.getTitle()).position(i.getPosition()).snippet(i.getDescription());
-            r.add(gMap.addMarker(opts));*/
-
+    protected Collection<Marker> putMarkersFromMapItems(List<Station> l) {
             Collection<Marker> r = new ArrayList<>();
-            for (MapItem i : l) {
+            for (Station i : l) {
+
                 MarkerOptions opts = new MarkerOptions();
                 BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.mipmap.station);
-                opts.title(i.getTitle());
+                opts.title(i.getBandiera());
                 opts.snippet(i.getDescription());
                 opts.position(i.getPosition());
                 opts.icon(icon);
-                r.add(gMap.addMarker(opts));
+                Marker m = gMap.addMarker(opts);
+                r.add(m);
+                m.showInfoWindow();
+                //r.add(gMap.addMarker(opts));
         }
         return r;
     }
@@ -892,7 +911,7 @@ public class MapsActivity extends AppCompatActivity
      * @param parser un parser che produca sottotipi di MapItem, con qualunque generic Progress o Input
      * @param <I>    parametro di tipo che estende MapItem.
      * @return ritorna una collection di marker se tutto va bene; null altrimenti.
-     */
+     *//*
     @Nullable
     protected <I extends MapItem> Collection<Marker> putMarkersFromData(@NonNull AsyncParser<I, ?> parser) {
         try {
@@ -904,7 +923,7 @@ public class MapsActivity extends AppCompatActivity
             e.printStackTrace();
             return null;
         }
-    }
+    }*/
 
     /**
      * Controlla lo stato del GPS e dei servizi di localizzazione, comportandosi di conseguenza.
