@@ -48,10 +48,10 @@ public class Station implements MapItem, Parcelable,Serializable {
         Comune = in.readString();
         Indirizzo = in.readString();
         Gestore = in.readString();
-        Carburante = in.readString();
         Bandiera = in.readString();
         latitudine = in.readString();
         longitudine = in.readString();
+        Carburante = in.readString();
     }
 
     public String getID(){return ID;}
@@ -89,7 +89,28 @@ public class Station implements MapItem, Parcelable,Serializable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeValue(this);
+        dest.writeString(ID);
+        dest.writeString(Nome);
+        dest.writeString(Provincia);
+        dest.writeString(Comune);
+        dest.writeString(Indirizzo);
+        dest.writeString(Gestore);
+        dest.writeString(Bandiera);
+        dest.writeString(latitudine);
+        dest.writeString(longitudine);
+        dest.writeString(Carburante);
+    }
+    private void readFromParcel(Parcel in) {
+        ID = in.readString();
+        Nome = in.readString();
+        Provincia = in.readString();
+        Comune = in.readString();
+        Indirizzo = in.readString();
+        Gestore = in.readString();
+        Bandiera = in.readString();
+        latitudine = in.readString();
+        longitudine = in.readString();
+        Carburante = in.readString();
     }
 }
 

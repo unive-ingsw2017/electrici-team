@@ -7,6 +7,15 @@
     <TextView
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
+        android:id="@+id/bandiera"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:text="Bandiera: "
+        android:textAppearance="?android:attr/textAppearanceMedium" />s
+
+    <TextView
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
         android:id="@+id/citta"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
@@ -29,15 +38,6 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:text="Indirizzo: "
-        android:textAppearance="?android:attr/textAppearanceMedium" />
-
-    <TextView
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:id="@+id/bandiera"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        android:text="Bandiera: "
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
 </LinearLayout>

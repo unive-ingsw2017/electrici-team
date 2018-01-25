@@ -69,7 +69,7 @@ public class SearchActivity extends AppCompatActivity{
 
                         /*manda un intent con la stazione appena creata alla maps activity per far comparire il marker*/
                         Intent i = new Intent(SearchActivity.this, MapsActivity.class);
-                        i.putExtra("search_result", (Serializable) s);
+                        i.putExtra("search_result", (Parcelable) s);
                         startActivity(i);
                 }
             });

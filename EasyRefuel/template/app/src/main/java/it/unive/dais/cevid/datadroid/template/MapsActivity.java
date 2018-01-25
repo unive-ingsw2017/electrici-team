@@ -776,8 +776,10 @@ public class MapsActivity extends AppCompatActivity
         applyMapSettings();
 
         /*prende i dati dalla ricerca e posiziona il marker*/
-        Intent i = getIntent();
-        Station s = i.getParcelableExtra("search_result");
+        Station s = null;
+        Bundle b = getIntent().getExtras();
+        if(b != null)
+           s = b.getParcelable("search_result");
 
         if(s != null){
             List<Station> st = new ArrayList<>();
