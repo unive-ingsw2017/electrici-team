@@ -4,6 +4,17 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
+<LinearLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <ImageView
+        android:layout_width="25dip"
+        android:layout_height="25dip"
+        android:layout_marginLeft="5dip"
+        android:background="@mipmap/marker_name"/>
     <TextView
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
@@ -11,8 +22,21 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:text="Bandiera: "
-        android:textAppearance="?android:attr/textAppearanceMedium" />s
+        android:textAppearance="?android:attr/textAppearanceMedium" />
 
+</LinearLayout>
+
+<LinearLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <ImageView
+        android:layout_width="25dip"
+        android:layout_height="25dip"
+        android:layout_marginLeft="5dip"
+        android:background="@mipmap/list_indirizzo"/>
     <TextView
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
@@ -22,22 +46,48 @@
         android:text="Città: "
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
-    <TextView
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:id="@+id/provincia"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        android:text="Provincia: "
-        android:textAppearance="?android:attr/textAppearanceMedium" />
+</LinearLayout>
+<LinearLayout
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:orientation="horizontal"
+android:gravity="center_vertical">
 
-    <TextView
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:id="@+id/indirizzo"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        android:text="Indirizzo: "
-        android:textAppearance="?android:attr/textAppearanceMedium" />
+<ImageView
+    android:layout_width="25dip"
+    android:layout_height="25dip"
+    android:layout_marginLeft="5dip"
+    android:background="@mipmap/marker_city"/>
+<TextView
+    android:layout_height="wrap_content"
+    android:layout_width="wrap_content"
+    android:id="@+id/provincia"
+    android:layout_alignParentLeft="true"
+    android:layout_alignParentTop="true"
+    android:text="Provincia: "
+    android:textAppearance="?android:attr/textAppearanceMedium" />
 
+</LinearLayout>
+
+<LinearLayout
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:orientation="horizontal"
+android:gravity="center_vertical">
+
+<ImageView
+    android:layout_width="25dip"
+    android:layout_height="25dip"
+    android:layout_marginLeft="5dip"
+    android:background="@mipmap/list_comune"/>
+<TextView
+    android:layout_height="wrap_content"
+    android:layout_width="wrap_content"
+    android:id="@+id/indirizzo"
+    android:layout_alignParentLeft="true"
+    android:layout_alignParentTop="true"
+    android:text="Indirizzo: "
+    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+</LinearLayout>
 </LinearLayout>

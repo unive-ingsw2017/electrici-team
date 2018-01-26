@@ -27,6 +27,7 @@ public class SearchActivity extends AppCompatActivity{
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
+        setTitle(R.string.title_search_activity);
         handleIntent(getIntent());
     }
 

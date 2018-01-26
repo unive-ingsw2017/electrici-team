@@ -2,6 +2,7 @@
     <!-- Customize your app's name here. -->
     <string name="app_name">EasyRefuel</string>
     <string name="title_activity_maps">EasyRefuel</string>
+    <string name="title_search_activity">Risultati ricerca</string>
     <!-- -->
 
     <string name="gps_disabled">GPS disattivato</string>

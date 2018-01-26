@@ -6,16 +6,22 @@ package it.unive.dais.cevid.datadroid.template;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -37,10 +43,12 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.Switch;
@@ -78,11 +86,16 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
 import it.unive.dais.cevid.datadroid.lib.parser.AsyncParser;
@@ -113,7 +126,11 @@ public class MapsActivity extends AppCompatActivity
         implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
-        GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener, GoogleMap.OnCameraMoveStartedListener, GoogleMap.OnMarkerClickListener{
+        GoogleMap.OnMapClickListener,
+        GoogleMap.OnMapLongClickListener,
+        GoogleMap.OnCameraMoveStartedListener,
+        GoogleMap.OnMarkerClickListener{
+
 
     protected static final int REQUEST_CHECK_SETTINGS = 500;
     protected static final int PERMISSIONS_REQUEST_ACCESS_BOTH_LOCATION = 501;
@@ -175,6 +192,7 @@ public class MapsActivity extends AppCompatActivity
     private double toLatitude;
     /*linea per il percorso*/
     Polyline line;
+
     /*per db*/
     String s = new String();
     DBHelper db;
@@ -193,6 +211,35 @@ public class MapsActivity extends AppCompatActivity
 
         // inizializza le preferenze
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
+        //controlla se la connessione internet è attiva
+        boolean isOnline = isNetworkAvailable(this);
+        if(!isOnline){
+            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+            alertDialogBuilder.setTitle("Connesione assente");
+            alertDialogBuilder
+                    .setMessage("Vuoi attivare la connesioni dati? Senza non potrai usufruire delle funzionalità dell'app?")
+                    .setCancelable(false)
+                    .setPositiveButton("Si",new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog,int id) {
+                            //attiva dati mobili
+                            try {
+                                enableMobileData(MapsActivity.this,true);
+                            } catch (ClassNotFoundException | NoSuchFieldException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    })
+                    .setNegativeButton("No",new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog,int id) {
+                            //chiudi app
+                            finish();
+                            System.exit(0);
+                        }
+                    });
+            AlertDialog alertDialog = alertDialogBuilder.create();
+            alertDialog.show();
+        }
 
         // trova gli oggetti che rappresentano i bottoni e li salva come campi d'istanza
         button_here = (ImageButton) findViewById(R.id.button_here);
@@ -215,8 +262,8 @@ public class MapsActivity extends AppCompatActivity
 
         button_credits = (Button) findViewById(R.id.Crediti);
         button_privacy = (Button) findViewById(R.id.Privacy);
+        //geocoder
 
-        /*textinput del drawer*/
 
         /*switch*/
         GPL = (Switch) findViewById(R.id.GPL);
@@ -236,28 +283,50 @@ public class MapsActivity extends AppCompatActivity
         db = new DBHelper(this);
         db.openDataBase();
 
-
         // API per i servizi di localizzazione
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         // inizializza la mappa asincronamente
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        Geocoder geocoder;
+        Locale locale = Locale.getDefault();
+        geocoder = new Geocoder(this, locale);
 
         // quando viene premito il pulsante HERE viene eseguito questo codice
         button_here.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "here button clicked");
                 gpsCheck();
                 updateCurrentPosition();
+
                 if (hereMarker != null) hereMarker.remove();
                 if (currentPosition != null) {
                     BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.mipmap.position_here);
                     MarkerOptions opts = new MarkerOptions();
                     opts.position(currentPosition);
-                    opts.title(getString(R.string.marker_title));
-                    opts.snippet(String.format("lat: %g\nlng: %g", currentPosition.latitude, currentPosition.longitude));
+                    opts.title("Tu sei QUI");
+
+                    /*trova l'indirizzo da latitudine e logintudine*/
+                    List<Address> addresses = null;
+                    try {
+                        addresses = geocoder.getFromLocation(currentPosition.latitude, currentPosition.longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    if(addresses != null) {
+                        String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
+                        String city = addresses.get(0).getLocality();
+                        String state = addresses.get(0).getAdminArea();
+                        String country = addresses.get(0).getCountryName();
+                        String postalCode = addresses.get(0).getPostalCode();
+
+                        opts.snippet(city+','+postalCode+','+address+','+state+','+country);
+                    }else
+                        opts.snippet("Dati non disponibili");
+
                     opts.icon(icon);
                     hereMarker = gMap.addMarker(opts);
                     if (gMap != null)
@@ -696,7 +765,37 @@ public class MapsActivity extends AppCompatActivity
             own_marker.remove();
         BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.mipmap.position_temp);
         MarkerOptions marker = new MarkerOptions().position(latLng);
-        marker.title("lat:" + latLng.latitude + "\nlng:" + latLng.longitude);
+        Geocoder geocoder;
+        Locale locale = Locale.getDefault();
+        geocoder = new Geocoder(this, locale);
+
+        List<Address> addresses = null;
+        double longitude = latLng.longitude;
+        double latitude = latLng.latitude;
+        try {
+            addresses = geocoder.getFromLocation(latitude, longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if(addresses != null) {
+            String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
+            String city = addresses.get(0).getLocality();
+            String state = addresses.get(0).getAdminArea();
+            String country = addresses.get(0).getCountryName();
+            String postalCode = addresses.get(0).getPostalCode();
+            if (city != null)
+                marker.title(city);
+            else
+                marker.title(country);
+            if (postalCode != null)
+                marker.snippet(address + ',' + postalCode + ',' + state + ',' + country);
+            else
+                marker.snippet(address + ',' + state + ',' + country);
+        }
+        else{
+            marker.title("Dati non disponibili");
+            marker.snippet("Dati non disponibili");
+        }
         marker.icon(icon);
         own_marker = gMap.addMarker(marker);
     }
@@ -754,6 +853,14 @@ public class MapsActivity extends AppCompatActivity
         gMap.setOnMapLongClickListener(this);
         gMap.setOnCameraMoveStartedListener(this);
         gMap.setOnMarkerClickListener(this);
+
+        gMap.setOnPolylineClickListener(new GoogleMap.OnPolylineClickListener() {
+            @Override
+            public void onPolylineClick(Polyline polyline) {
+               // Log.e("Polyline position", " -- " + polyline.getTag());
+                onButtonShowPopupWindowClick("  " + polyline.getTag(),findViewById(R.id.map));
+            }
+        });
 
         UiSettings uis = gMap.getUiSettings();
         /*messo a false per nascondere i bottoni*/
@@ -879,7 +986,6 @@ public class MapsActivity extends AppCompatActivity
      * Attenzione: l'oggetto gMap deve essere inizializzato, questo metodo va pertanto chiamato preferibilmente dalla
      * callback onMapReady().
      * @param l la lista di oggetti di tipo I tale che I sia sottotipo di MapItem.
-     * @param <I> sottotipo di MapItem.
      * @return ritorna la collection di oggetti Marker aggiunti alla mappa.
      */
 
@@ -897,8 +1003,8 @@ public class MapsActivity extends AppCompatActivity
                 opts.icon(icon);
                 Marker m = gMap.addMarker(opts);
                 r.add(m);
-                m.showInfoWindow();
-                //r.add(gMap.addMarker(opts));
+                //mostra le info appena pèosizionato
+                //m.showInfoWindow();
         }
         return r;
     }
@@ -1045,11 +1151,15 @@ public class MapsActivity extends AppCompatActivity
             JSONArray legsArray = routes.getJSONArray("legs");
             JSONObject legs = legsArray.getJSONObject(0);
             JSONObject distanceObj = legs.getJSONObject("distance");
+            JSONObject timeObj = legs.getJSONObject("duration");
             //mostra la distanza
-            String parsedDistance=distanceObj.getString("text");
-            Toast.makeText(this,String.valueOf(parsedDistance+" Meters"),Toast.LENGTH_SHORT).show();
-
-
+            String parsedDistance = distanceObj.getString("text");
+            String timeDistance = timeObj.getString("text");
+            String startAddress = (String) legs.get("start_address");
+            String endAddress =  (String) legs.get("end_address");
+            //Toast.makeText(this,String.valueOf(parsedDistance+" Meters"),Toast.LENGTH_SHORT).show();
+            line.setTag(parsedDistance+','+timeDistance+','+startAddress+','+endAddress);
+            line.setClickable(true);
         }
         catch (JSONException e) {
 
@@ -1088,7 +1198,75 @@ public class MapsActivity extends AppCompatActivity
 
         return poly;
     }
+
+
+
+    public void onButtonShowPopupWindowClick(String count,View view) {
+
+        String[] info = count.split(",");
+
+        // get a reference to the already created main layout
+       // LinearLayout mainLayout = (LinearLayout) findViewById(R.id.map);
+
+        // inflate the layout of the popup window
+        LayoutInflater inflater = (LayoutInflater)
+                getSystemService(LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.poly_window_layout, null);
+
+        ((TextView) popupView.findViewById(R.id.distance)).setText(info[0]);
+        ((TextView) popupView.findViewById(R.id.time)).setText(info[1]);
+        ((TextView) popupView.findViewById(R.id.start_address)).setText(info[2]);
+        ((TextView) popupView.findViewById(R.id.end_address)).setText(info[3]);
+
+        // create the popup window
+        int width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        int height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        boolean focusable = true; // lets taps outside the popup also dismiss it
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
+
+        // show the popup window
+        popupWindow.showAtLocation(view, Gravity.CENTER, 0, 0);
+
+        // dismiss the popup window when touched
+        popupView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                popupWindow.dismiss();
+                return true;
+            }
+        });
+    }
+
+
     /*-----------------------------------------------------------------------------------------------------*/
+    //controlla se il device è collegato alla rete
+    public static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager connectivity = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivity != null) {
+            NetworkInfo[] info = connectivity.getAllNetworkInfo();
+            if (info != null) {
+                for (int i = 0; i < info.length; i++) {
+                    if (info[i].getState() == NetworkInfo.State.CONNECTED) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    //metodo per attivare/disattivare dati mobili
+    private void enableMobileData(Context context, boolean enabled) throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        final ConnectivityManager cm = (ConnectivityManager)  context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        final Class conmanClass = Class.forName(cm.getClass().getName());
+        final Field connectivityManagerField = conmanClass.getDeclaredField("mService");
+        connectivityManagerField.setAccessible(true);
+        final Object connectivityManager = connectivityManagerField.get(cm);
+        final Class connectivityManagerClass =  Class.forName(connectivityManager.getClass().getName());
+        final Method setMobileDataEnabledMethod = connectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
+        setMobileDataEnabledMethod.setAccessible(true);
+
+        setMobileDataEnabledMethod.invoke(connectivityManager, enabled);
+    }
 
 
 
