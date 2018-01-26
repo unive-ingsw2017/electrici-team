@@ -44,11 +44,11 @@ public class DBHelper extends SQLiteOpenHelper {
             String destPath = DB_PATH + DB_NAME;
             try {
                 File f = new File(destPath);
-               if (!f.exists()) {
+               //if (!f.exists()) {
                     f.mkdirs();
                     f.createNewFile();
                     CopyDB(myContext.getAssets().open("db"), new FileOutputStream(destPath+DB_NAME));
-                }
+                //}
             } catch (IOException e) {
                 e.printStackTrace();
             }
