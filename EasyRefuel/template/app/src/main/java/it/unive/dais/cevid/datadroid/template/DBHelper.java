@@ -10,27 +10,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
+import android.Manifest;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-
-import com.google.android.gms.maps.model.LatLng;
-
 import static android.database.sqlite.SQLiteDatabase.OPEN_READONLY;
 import static android.database.sqlite.SQLiteDatabase.openDatabase;
 
 public class DBHelper extends SQLiteOpenHelper {
 
-        //The Android's default system path of your application database.
         private static String DB_PATH = "/data/data/" + "it.unive.dais.cevid.datadroid.template" + "/databases";
         private static String DB_NAME = "db";
         private SQLiteDatabase myDataBase;
         private final Context myContext;
+
 
         public DBHelper(Context context) {
             super(context, DB_NAME, null, 1);
@@ -51,12 +47,12 @@ public class DBHelper extends SQLiteOpenHelper {
                if (!f.exists()) {
                     f.mkdirs();
                     f.createNewFile();
-                    CopyDB(myContext.getAssets().open("db"), new FileOutputStream(destPath));
+                    CopyDB(myContext.getAssets().open("db"), new FileOutputStream(destPath+DB_NAME));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            myDataBase = openDatabase(destPath,null,OPEN_READONLY);
+            myDataBase = openDatabase(destPath+"db",null,OPEN_READONLY);
         }
 
         @Override

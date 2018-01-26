@@ -82,9 +82,7 @@
         android:id="@+id/navList"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_gravity="start"><!--
-        app:headerLayout="@layout/drawer_top"
-        app:menu="@menu/drawer_menu">-->
+        android:layout_gravity="start">
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:app="http://schemas.android.com/apk/res-auto"
             android:layout_width="match_parent"
@@ -98,28 +96,6 @@
                 android:text="Carburanti"
                 android:textAppearance="@style/TextAppearance.AppCompat.Caption"
                 android:textSize="24sp" />
-
-            <ProgressBar
-                android:id="@+id/progress_bar"
-                style="@android:style/Widget.Holo.Light.ProgressBar.Horizontal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="10dp"
-                android:indeterminate="false"
-                android:max="100"
-                android:progressTint="@color/button_main_color"
-                app:layout_anchorGravity="top" />
-
-            <TextView
-                android:id="@+id/text_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:gravity="center_horizontal"
-                android:textSize="15sp"
-                android:padding="5dp"
-                app:layout_anchor="@id/progress_bar"
-                app:layout_anchorGravity="center_horizontal" />
 
             <Switch
                 android:id="@+id/Diesel"
@@ -158,34 +134,6 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:text="Conferma" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="10dp"
-                android:text="Itinerario"
-                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-                android:textSize="24sp" />
-
-            <EditText
-                android:id="@+id/partenza"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ems="10"
-                android:text="Partenza" />
-            <EditText
-                android:id="@+id/destinazione"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ems="10"
-                android:text="Destinazione" />
-            <Button
-                android:id="@+id/Parti"
-                style="@style/Widget.AppCompat.Button.Colored"
-                android:layout_width="148dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="Parti" />
             <!-- filler -->
             <TextView android:layout_height="0dip"
                 android:layout_width="fill_parent"

@@ -145,7 +145,7 @@ public class MapsActivity extends AppCompatActivity
      * fanno parte degli oggetti gestiti manualmente dal codice.
      */
     protected ImageButton button_here,button_maps,button_nav,button_exit,button_ibrida,button_satellite,button_rilievo,button_normale;
-    protected Button button_confirm,button_go,button_credits,button_privacy;
+    protected Button button_confirm,button_credits,button_privacy;
     /**
      * API per i servizi di localizzazione.
      */
@@ -174,9 +174,9 @@ public class MapsActivity extends AppCompatActivity
     protected Switch GPL,diesel,benzina,metano,elettrico;
 
     /*progress bar e Async Task*/
-    private ProgressBar mProgressBar;
-    private AsyncTask<HashMap<Integer,Station>, Integer,HashMap<Integer,Station>> mMyTask;
-    private TextView mTextView;
+    //private ProgressBar mProgressBar;
+    //private AsyncTask<HashMap<Integer,Station>, Integer,HashMap<Integer,Station>> mMyTask;
+    //private TextView mTextView;
 
     List<Station> station = new ArrayList<>();
     private Collection<Marker> markers;
@@ -253,12 +253,11 @@ public class MapsActivity extends AppCompatActivity
         mActivityTitle = getTitle().toString();
 
         /*progress bar*/
-        mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
-        mTextView = (TextView) findViewById(R.id.text_view);
+        //mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
+        //mTextView = (TextView) findViewById(R.id.text_view);
 
         /*bottoni del drawer*/
         button_confirm = (Button) findViewById(R.id.Conferma);
-        button_go = (Button) findViewById(R.id.Parti);
 
         button_credits = (Button) findViewById(R.id.Crediti);
         button_privacy = (Button) findViewById(R.id.Privacy);
@@ -279,9 +278,7 @@ public class MapsActivity extends AppCompatActivity
         getSupportActionBar().setHomeButtonEnabled(true);
         /*fine drawer*/
 
-        /*helper per il db*/
-        db = new DBHelper(this);
-        db.openDataBase();
+
 
         // API per i servizi di localizzazione
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -293,6 +290,10 @@ public class MapsActivity extends AppCompatActivity
         Locale locale = Locale.getDefault();
         geocoder = new Geocoder(this, locale);
 
+        ////////////////////////////////////////////////////////
+        db = new DBHelper(this);
+        db.openDataBase();
+        //////////////////////////////////////////////////////
         // quando viene premito il pulsante HERE viene eseguito questo codice
         button_here.setOnClickListener(new View.OnClickListener() {
 
@@ -357,7 +358,7 @@ public class MapsActivity extends AppCompatActivity
             }
         });*/
 
-        /*filtra le stazioni di servizio--DA FARE*/
+        /*filtra le stazioni di servizio*/
         GPL.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if(isChecked){
@@ -424,6 +425,8 @@ public class MapsActivity extends AppCompatActivity
                         markers = putMarkersFromMapItems(station);
                         s = null;
                     }
+                    //chiude il drawer
+                    mDrawerLayout.closeDrawers();
             }
         });
 
@@ -618,6 +621,7 @@ public class MapsActivity extends AppCompatActivity
             }
         }
     }
+
 
     /**
      * Invocato quando viene creato il menu delle impostazioni.
@@ -1267,6 +1271,8 @@ public class MapsActivity extends AppCompatActivity
 
         setMobileDataEnabledMethod.invoke(connectivityManager, enabled);
     }
+
+
 
 
 
