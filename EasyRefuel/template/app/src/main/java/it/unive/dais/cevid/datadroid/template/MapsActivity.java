@@ -5,6 +5,7 @@
 package it.unive.dais.cevid.datadroid.template;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -417,16 +418,29 @@ public class MapsActivity extends AppCompatActivity
         button_confirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                    /*pulisci la mappa dai marker*/
-                    gMap.clear();
-                    if(s != null) {
-                        /*filtra*/
-                        station = db.getStationFromFuel(s);
+                //async task che carica le stazioni in background
+                @SuppressLint("StaticFieldLeak") AsyncTask<Void,Void,Void> as = new AsyncTask<Void, Void, Void>(){
+                ProgressDialog loading;
+                    @Override
+                    protected void onPreExecute() {
+                        super.onPreExecute();
+                        loading = ProgressDialog.show(MapsActivity.this, "Caricamento stazioni ", "Attendi...", false, false);
+                        gMap.clear();
+                    }
+                    @Override
+                    protected Void doInBackground(Void... voids) {
+                        if (s != null) {
+                            station = db.getStationFromFuel(s);
+                        }
+                        return null;
+                    }
+                    protected void onPostExecute(Void v) {
                         markers = putMarkersFromMapItems(station);
                         s = null;
+                        mDrawerLayout.closeDrawers();
+                        loading.dismiss();
                     }
-                    //chiude il drawer
-                    mDrawerLayout.closeDrawers();
+                }.execute();
             }
         });
 

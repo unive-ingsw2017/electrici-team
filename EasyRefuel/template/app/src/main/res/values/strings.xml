@@ -47,5 +47,6 @@
     <string name="search_hint">Cerca luoghi</string>
     <string name="action_search">Ricerca</string>
     <string name="title_activity_privacy">PrivacyActivity</string>
+    <string name="title_activity_splash">SplashActivity</string>
 
 </resources>
