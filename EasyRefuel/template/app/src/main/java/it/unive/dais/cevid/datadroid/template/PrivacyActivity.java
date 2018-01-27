@@ -1,4 +1,4 @@
-/*package it.unive.dais.cevid.datadroid.template;
+package it.unive.dais.cevid.datadroid.template;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -15,4 +15,3 @@ public class PrivacyActivity extends AppCompatActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
     }
 }
-*/

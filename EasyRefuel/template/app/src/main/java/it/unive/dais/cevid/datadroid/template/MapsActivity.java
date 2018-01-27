@@ -262,8 +262,6 @@ public class MapsActivity extends AppCompatActivity
 
         button_credits = (Button) findViewById(R.id.Crediti);
         button_privacy = (Button) findViewById(R.id.Privacy);
-        //geocoder
-
 
         /*switch*/
         GPL = (Switch) findViewById(R.id.GPL);
@@ -348,7 +346,7 @@ public class MapsActivity extends AppCompatActivity
                 startActivity(myIntent);
             }
         });
-        /*button_privacy.setOnClickListener(new View.OnClickListener(){
+        button_privacy.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "privacy button clicked");
@@ -357,7 +355,7 @@ public class MapsActivity extends AppCompatActivity
                         PrivacyActivity.class);
                 startActivity(myIntent);
             }
-        });*/
+        });
 
         /*filtra le stazioni di servizio*/
         GPL.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -1140,7 +1138,7 @@ public class MapsActivity extends AppCompatActivity
 
     //disegna il percorso, result è la risposta del server alla richiesta
     public void drawPath(String  result) {
-        //racxoglie le coordinate di partenza e destinazione
+        //raccoglie le coordinate di partenza e destinazione
         LatLng from = new LatLng(fromLatitude,fromLongitude);
         LatLng to = new LatLng(toLatitude,toLongitude);
 
@@ -1149,7 +1147,7 @@ public class MapsActivity extends AppCompatActivity
             final JSONObject json = new JSONObject(result);
             String status = (String) json.get("status");
             /*questo non va sistemalo*/
-            if (status.equals("ZER0_RESULTS")){
+            if (status.trim().equals("ZER0_RESULTS")){
                 Toast.makeText(this,String.valueOf("Non ci sono percorsi disponibili"),Toast.LENGTH_SHORT).show();
             }
             JSONArray routeArray = json.getJSONArray("routes");
